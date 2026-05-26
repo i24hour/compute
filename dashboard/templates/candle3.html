@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-store"/>
+  <title>3-candle PTB probability · 5m</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #070b14; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px 20px 32px; }
+    .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    .top a { color: #93c5fd; font-weight: 600; }
+    .hero { background: linear-gradient(125deg, #1e2952 0%, #0f172a 52%, #082f49 100%); border: 1px solid #334155; border-radius: 14px; padding: 20px; margin-bottom: 22px; }
+    .hero h1 { margin: 0 0 10px; font-size: 1.4rem; color: #f8fafc; }
+    .hero p { margin: 0; font-size: 0.92rem; line-height: 1.55; color: #94a3b8; max-width: 920px; }
+    .pill { display: inline-flex; padding: 4px 10px; border-radius: 999px; background: #151b2e; border: 1px solid #1e293b; font-size: 11px; color: #94a3b8; }
+    .muted { color: #94a3b8; font-size: 0.82rem; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+    .card { background: #101624; border: 1px solid #273347; border-radius: 11px; padding: 16px; margin-bottom: 16px; }
+    .card h3 { margin: 0 0 12px; font-size: 1.02rem; color: #f1f5f9; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+    .prob { font-size: 2.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .prob.up { color: #34d399; }
+    .prob.dn { color: #c084fc; }
+    .sub { font-size: 13px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
+    table.t { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.t th { text-align: left; padding: 6px 10px 6px 0; color: #64748b; border-bottom: 1px solid #1e293b; }
+    table.t td { padding: 6px 10px 6px 0; font-variant-numeric: tabular-nums; color: #cbd5e1; border-bottom: 1px solid #141c2f; }
+    .hit-y { color: #34d399; font-weight: 700; }
+    .hit-n { color: #f87171; font-weight: 700; }
+    .scroll { max-height: 480px; overflow: auto; }
+    button { padding: 8px 16px; border-radius: 8px; border: 1px solid #334155; background: #151b2e; color: #e2e8f0; cursor: pointer; font-weight: 600; font-size: 13px; }
+    #status { margin-top: 10px; font-family: ui-monospace, monospace; font-size: 12px; color: #a5b4fc; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="pill">Full poly_5m_live.csv · historical + live recorder</div>
+    <div>
+      <a href="/livetest">← Livetest</a> &nbsp; <a href="/live">Live tape</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>3-candle close probability — 5m PTB markets</h1>
+    <p id="desc"></p>
+    <button type="button" id="btn-pause">Pause auto-refresh</button>
+    <p id="meta" class="muted" style="margin-top:12px;"></p>
+    <p id="status"></p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>3× positive closes (all &gt; PTB)</h3>
+      <div class="prob up" id="pos-prob">—</div>
+      <div class="sub" id="pos-sub"></div>
+    </div>
+    <div class="card">
+      <h3>3× negative closes (all &lt; PTB)</h3>
+      <div class="prob dn" id="neg-prob">—</div>
+      <div class="sub" id="neg-sub"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Live — waiting for settlement (min 3 complete)</h3>
+    <div id="live-box" class="muted">—</div>
+  </div>
+
+  <div class="card">
+    <h3>Recent windows with 3-candle signal</h3>
+    <div class="scroll">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Window end</th><th>Signal</th><th>c1 / c2 / c3</th><th>PTB</th>
+            <th>Settle BTC</th><th>Outcome</th><th>Hit?</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+(function(){
+  let paused = false, timer;
+  function $(id){ return document.getElementById(id); }
+  function pct(x){ return (x==null||isNaN(x)) ? '—' : Number(x).toFixed(2)+'%'; }
+  function fmtUsd(x){ return (x==null||isNaN(x)) ? '—' : '$'+Number(x).toLocaleString('en-US',{maximumFractionDigits:2}); }
+
+  async function refresh(){
+    $('status').textContent = paused ? '(paused)' : 'Fetching…';
+    const r = await fetch('/api/candle3_prob');
+    const d = await r.json();
+    $('desc').textContent = d.description || '';
+    var meta = [];
+    if (d.csv_rows!=null) meta.push('rows: '+d.csv_rows.toLocaleString());
+    if (d.csv_mtime_unix) meta.push('csv mtime: '+new Date(d.csv_mtime_unix*1000).toLocaleString());
+    if (d.cache_hit) meta.push('cache hit');
+    if (d.clock_iso) meta.push('clock: '+d.clock_iso);
+    $('meta').textContent = meta.join(' · ');
+
+    var p = d.positive || {};
+    var n = d.negative || {};
+    $('pos-prob').textContent = pct(p.probability_pct);
+    $('pos-sub').innerHTML = (p.label||'')+'<br/>windows <strong>'+(p.windows||0)+'</strong> · settled <strong>'+(p.settled||0)+'</strong> · hits <strong>'+(p.hits||0)+'</strong> · misses <strong>'+(p.misses||0)+'</strong> · push <strong>'+(p.pushes||0)+'</strong><br/>'+(p.hit_rate_note||'');
+    $('neg-prob').textContent = pct(n.probability_pct);
+    $('neg-sub').innerHTML = (n.label||'')+'<br/>windows <strong>'+(n.windows||0)+'</strong> · settled <strong>'+(n.settled||0)+'</strong> · hits <strong>'+(n.hits||0)+'</strong> · misses <strong>'+(n.misses||0)+'</strong> · push <strong>'+(n.pushes||0)+'</strong><br/>'+(n.hit_rate_note||'');
+
+    var live = d.live_pending || [];
+    $('live-box').innerHTML = !live.length ? '<span class="muted">No open 3-candle signals right now.</span>' :
+      live.map(function(w){
+        return '<div style="margin-bottom:8px;padding:8px;background:#090f1f;border-radius:8px;border:1px solid #1e293b;">'+
+          '<strong>'+w.slug+'</strong> · signal '+w.signal+' · awaiting <strong>'+w.awaiting+'</strong> · secs left '+w.seconds_left+
+          '<br/>c1='+w.candle1_close_btc+' c2='+w.candle2_close_btc+' c3='+w.candle3_close_btc+' · PTB '+fmtUsd(w.ptb_usd)+
+          '</div>';
+      }).join('');
+
+    var rows = d.recent || [];
+    $('tbl-body').innerHTML = !rows.length ? '<tr><td colspan="7" class="muted">No 3-candle signals in CSV yet.</td></tr>' :
+      rows.map(function(w){
+        var hit = '—';
+        if (w.hit === true) hit = '<span class="hit-y">YES</span>';
+        else if (w.hit === false) hit = '<span class="hit-n">NO</span>';
+        else if (w.settled && w.outcome === 'PUSH') hit = 'PUSH';
+        else if (!w.settled) hit = '<span class="muted">OPEN</span>';
+        return '<tr><td>'+new Date(w.window_end_unix*1000).toISOString().slice(0,19)+'Z</td>'+
+          '<td>'+w.signal+'</td><td>'+w.candle1_close_btc+' / '+w.candle2_close_btc+' / '+w.candle3_close_btc+'</td>'+
+          '<td>'+fmtUsd(w.ptb_usd)+'</td><td>'+(w.settlement_btc??'—')+'</td><td>'+(w.outcome||'—')+'</td><td>'+hit+'</td></tr>';
+      }).join('');
+
+    $('status').textContent = paused ? '(paused)' : 'Updated '+new Date().toISOString();
+  }
+
+  $('btn-pause').onclick = function(){
+    paused = !paused;
+    $('btn-pause').textContent = paused ? 'Resume auto-refresh' : 'Pause auto-refresh';
+    if (!paused) refresh();
+  };
+  refresh();
+  timer = setInterval(function(){ if(!paused) refresh(); }, 5000);
+})();
+</script>
+</body>
+</html>

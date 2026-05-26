@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="Cache-Control" content="no-store"/>
+  <title>Live test · PTB candle strategy · 5m</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #070b14; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px 20px 32px 20px; }
+    .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+    .top a { color: #93c5fd; font-weight: 600; }
+    .hero {
+      background: linear-gradient(125deg, #1e2952 0%, #0f172a 52%, #082f49 100%);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 22px;
+    }
+    .hero h1 { margin: 0 0 10px 0; font-size: 1.4rem; color: #f8fafc; }
+    .hero p.desc { margin: 0 0 14px 0; font-size: 0.92rem; line-height: 1.55; color: #94a3b8; max-width: 920px; }
+    .muted { color: #94a3b8; font-size: 0.82rem; }
+    code { font-size: 0.85rem; background: #0f172a; padding: 2px 6px; border-radius: 6px; }
+    .err { background: #450a0a; border: 1px solid #7f1d1d; color: #fecaca; padding: 12px; border-radius: 10px; margin: 10px 0; }
+    .controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin-top: 8px; }
+    label.lab { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; display: block; margin-bottom: 4px; }
+    input.num { padding: 8px 11px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; width: 120px; }
+    button { padding: 8px 16px; border-radius: 8px; border: 1px solid #0369a1; background: #0284c7; color: #fff; cursor: pointer; font-weight: 600; font-size: 13px; }
+    button.secondary { border-color: #334155; background: #151b2e; color: #e2e8f0; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #151b2e; border: 1px solid #1e293b; font-size: 11px; color: #94a3b8; }
+    .grid-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin: 14px 0 20px 0; }
+    .stat { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 14px; }
+    .stat b { font-size: 13px; color: #94a3b8; font-weight: 600; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+    .stat .v { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .v.pos { color: #34d399; }
+    .v.neg { color: #f87171; }
+    .v.neu { color: #fcd34d; }
+    .card { background: #101624; border: 1px solid #273347; border-radius: 11px; padding: 16px 16px 12px 16px; margin-bottom: 16px; }
+    .card h3 { margin: 0 0 12px 0; font-size: 1.02rem; color: #f1f5f9; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+    table.t { width: 100%; border-collapse: collapse; font-size: 12px; }
+    table.t th { text-align: left; padding: 6px 10px 6px 0; color: #64748b; border-bottom: 1px solid #1e293b; }
+    table.t td { padding: 6px 10px 6px 0; font-variant-numeric: tabular-nums; color: #cbd5e1; border-bottom: 1px solid #141c2f; vertical-align: top; }
+    table.t tbody tr:last-child td { border-bottom: none; }
+    .split { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin-top: 4px; }
+    @media (max-width: 960px) { .split { grid-template-columns: 1fr; } }
+    .tag { padding: 1px 6px; border-radius: 999px; font-size: 10px; margin-left: 6px; }
+    .tag.up { background: #14532d; color: #bbf7d0; }
+    .tag.dn { background: #581c87; color: #e9d5ff; }
+    .tiny { font-size: 11px; color: #64748b; line-height: 1.35; }
+    #status-bar { margin-top: 10px; font-family: ui-monospace, monospace; font-size: 12px; color: #a5b4fc; }
+    .win-grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); max-height: 420px; overflow-y: auto; padding-right: 4px; }
+    .wk { border: 1px solid #1f293b; border-radius: 10px; padding: 10px 11px; background: #090f1f; font-size: 11px; }
+    .wk b { font-size: 12px; color: #fafafa; }
+    .trade-scroll { max-height: 520px; overflow: auto; }
+    .prob-grid { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; margin-bottom: 8px; }
+    @media (max-width: 760px) { .prob-grid { grid-template-columns: 1fr; } }
+    .prob-card {
+      background: #0b1220; border: 1px solid #1e3a5f; border-radius: 12px; padding: 16px;
+    }
+    .prob-card h4 { margin: 0 0 8px 0; font-size: 0.95rem; color: #e2e8f0; line-height: 1.4; }
+    .prob-big { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .prob-big.up { color: #34d399; }
+    .prob-big.dn { color: #f87171; }
+    .prob-meta { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .sig-list { display: grid; gap: 6px; margin-top: 10px; max-height: 200px; overflow-y: auto; }
+    .sig-row { font-size: 11px; padding: 6px 8px; border-radius: 8px; background: #090f1f; border: 1px solid #1e293b; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div class="pill">Simulated fills from poly_5m_live.csv · all rows · not exchange execution</div>
+    <div>
+      <a href="/live">← Live tape</a> &nbsp; <a href="/candle3">3-candle prob</a> &nbsp; <a href="/">Backtest</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>Live strategy test — 5m PTB candles</h1>
+    <p class="desc" id="strategy-desc"></p>
+    <div class="controls">
+      <button type="button" class="secondary" id="btn-pause">Pause auto-refresh</button>
+      <button type="button" id="btn-load">Reload now</button>
+    </div>
+    <p id="csv-meta" class="muted"></p>
+    <p id="status-bar"></p>
+  </div>
+
+  <div id="err-box"></div>
+
+  <div class="grid-stats" id="summary-row"></div>
+
+  <div class="card">
+    <h3>Candle pattern → 5m settlement probability</h3>
+    <p class="muted tiny" style="margin-top:-6px;margin-bottom:12px;" id="candle-prob-desc">
+      Green = Chainlink 1m close above PTB · Red = close below PTB · Settlement = last BTC before window end.
+    </p>
+    <div class="prob-grid" id="candle-prob-grid">
+      <div class="prob-card"><h4>Loading…</h4></div>
+    </div>
+    <div class="sig-list" id="candle-prob-recent"></div>
+  </div>
+
+  <div class="split">
+    <div class="stat" style="margin: 0;"><b>Side · UP summary</b><div id="side-up" style="margin-top:8px;font-size:13px;line-height:1.5;color:#cbd5e1;"></div></div>
+    <div class="stat" style="margin: 0;"><b>Side · DOWN summary</b><div id="side-dn" style="margin-top:8px;font-size:13px;line-height:1.5;color:#cbd5e1;"></div></div>
+  </div>
+
+  <div class="split">
+    <div class="card">
+      <h3>UP — PnL &amp; win % by odds (limit −1¢)<span class="tag up">LONG UP</span></h3>
+      <div style="overflow-x:auto;"><table class="t" id="tbl-up"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="card">
+      <h3>DOWN — PnL &amp; win % by odds (limit −1¢)<span class="tag dn">LONG DOWN</span></h3>
+      <div style="overflow-x:auto;"><table class="t" id="tbl-dn"><thead></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Recent markets (signals &amp; preview settlement)</h3>
+    <p class="muted tiny" style="margin-top:-6px;margin-bottom:10px;">
+      Signals use last Chainlink print in minute 1 and minute 2 of each 5m window versus fixed PTB. Open windows may still be trading.
+    </p>
+    <div class="win-grid" id="windows-box"></div>
+  </div>
+
+  <div class="card">
+    <h3>Latest simulated trades (<span id="trade-count-meta">2500 cap</span>)</h3>
+    <div class="trade-scroll">
+      <table class="t"><thead id="tr-thead"><tr></tr></thead><tbody id="tr-body"></tbody></table>
+    </div>
+  </div>
+
+<script>
+(function(){
+  let paused = false;
+  let timer;
+
+  function $(id){ return document.getElementById(id); }
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+  function fmtPctMaybe(x){ if(x==null||isNaN(x)) return '—'; return Number(x).toFixed(2) + '%'; }
+  function fmtUsd(x){ if(x==null||x===''||isNaN(x)) return '—'; return '$' + Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  async function refresh(){
+    if (paused) { $('status-bar').textContent = '(paused)'; return; }
+    $('status-bar').textContent = 'Fetching ' + new Date().toISOString() + '…';
+    let js;
+    try {
+      const resp = await fetch('/api/livetest?tail=25000&schema=2');
+      js = await resp.json();
+      if (!resp.ok){
+        $('err-box').innerHTML = '<div class="err">' + escapeHtml(JSON.stringify(js||{}).slice(0,800)) + '</div>';
+        return;
+      }
+    } catch (err) {
+      $('err-box').innerHTML = '<div class="err">API failed: ' + escapeHtml(String(err)) + '</div>';
+      $('status-bar').textContent = 'Fetch error — retrying…';
+      return;
+    }
+    $('err-box').innerHTML = '';
+    $('strategy-desc').textContent = js.strategy && js.strategy.description ? js.strategy.description : '';
+
+    var meta=[]
+    if (js.csv_path) meta.push('file: '+js.csv_path);
+    if (js.fast_tail_rows) meta.push('fast tail: '+js.fast_tail_rows.toLocaleString()+' rows');
+    else if (js.csv_all_rows) meta.push('mode: all rows');
+    if (js.csv_rows!=null) meta.push('rows-used: '+js.csv_rows.toLocaleString());
+    if (js.csv_size_bytes!=null) meta.push('bytes: '+js.csv_size_bytes.toLocaleString());
+    if (js.csv_mtime_unix!=null) meta.push('mtime: '+ new Date(js.csv_mtime_unix*1000).toLocaleString());
+    if (js.cache_hit) meta.push('cache hit');
+    if (js.cache_age_seconds!=null) meta.push('cache age '+js.cache_age_seconds+'s');
+    if (js.full_refresh_pending || js.refresh_pending) meta.push('full CSV refresh in background…');
+    if (js.csv_stale_warning) meta.push(String(js.csv_stale_warning));
+    if (meta.length) $('csv-meta').textContent = meta.join(' · ');
+    var clock = String(js.strategy && js.strategy.clock_iso || '—');
+    $('status-bar').textContent = paused ? '(paused)' : ('CSV clock ' + clock);
+
+    $('summary-row').innerHTML = summarizeOverall(js.summary || {});
+    candleProbRender(js.candle_probs || null);
+    $('side-up').innerHTML = summarizeSide(js.summary_side && js.summary_side.UP);
+    $('side-dn').innerHTML = summarizeSide(js.summary_side && js.summary_side.DOWN);
+
+    oddsTable(js.by_odds && js.by_odds.UP || [], 'tbl-up');
+    oddsTable(js.by_odds && js.by_odds.DOWN || [], 'tbl-dn');
+    windowsRender(js.windows || []);
+    tradesRender(js.trades || []);
+
+    if (js.error) $('err-box').innerHTML = '<div class="err">' + escapeHtml(js.error)+'</div>';
+
+    $('trade-count-meta').textContent = (js.trades && js.trades.length || 0) + ' newest';
+  }
+
+  function summarizeOverall(s){
+    const pnl = Number(s.pnl_usd)||0;
+    const pnlCls = pnl>=0?'pos':'neg';
+    return `
+      <div class="stat"><b>simulated trades</b><span class="v neu">${(String(s.trade_count||0))}</span></div>
+      <div class="stat"><b>settled</b><span class="v neu">${(String(s.settled_count||0))}</span></div>
+      <div class="stat"><b>total PnL @ $1 / fill</b><span class="v ${pnlCls}">${pnl>=0?'+':''}${pnl.toFixed(2)} USD</span></div>
+      <div class="stat"><b>overall win%</b><span class="v">${fmtPctMaybe(s.win_pct_decided)}</span></div>
+      <div class="stat"><b>wins / losses</b><span class="v neu">${String(s.wins||0)+' • '+String(s.losses||0)}</span></div>
+      <div class="stat"><b>pushes @ PTB=BTC settle</b><span class="v neu">${String(s.pushes||0)}</span></div>`;
+  }
+
+  function candleProbRender(cp){
+    const grid = $('candle-prob-grid');
+    const recent = $('candle-prob-recent');
+    if (!cp) {
+      grid.innerHTML = '<div class="prob-card"><h4>No probability data yet</h4></div>';
+      recent.innerHTML = '';
+      return;
+    }
+    if (cp.description) $('candle-prob-desc').textContent = cp.description;
+
+    function card(bucket, cls) {
+      const p = bucket.probability_pct;
+      const pTxt = p == null ? '—' : (Number(p).toFixed(1) + '%');
+      return '<div class="prob-card">' +
+        '<h4>' + escapeHtml(bucket.label || '') + '</h4>' +
+        '<div class="prob-big ' + cls + '">' + pTxt + '</div>' +
+        '<div class="prob-meta">' +
+          'windows: <strong>' + (bucket.windows || 0) + '</strong> · ' +
+          'settled: <strong>' + (bucket.settled || 0) + '</strong><br/>' +
+          'hits: <strong style="color:#6ee7b7;">' + (bucket.hits || 0) + '</strong> · ' +
+          'misses: <strong style="color:#fda4af;">' + (bucket.misses || 0) + '</strong> · ' +
+          'pushes: ' + (bucket.pushes || 0) +
+          (bucket.hit_rate_note ? '<br/>' + escapeHtml(bucket.hit_rate_note) : '') +
+        '</div></div>';
+    }
+
+    grid.innerHTML =
+      card(cp.three_red || {}, 'dn') +
+      card(cp.three_green || {}, 'up');
+
+    const sigs = cp.recent_signals || [];
+    if (!sigs.length) {
+      recent.innerHTML = '<span class="muted">No matching candle patterns in CSV yet.</span>';
+      return;
+    }
+    recent.innerHTML = sigs.slice(0, 12).map(function(s) {
+      var hit = s.hit;
+      var hitTxt = hit === true ? '✓ hit' : (hit === false ? '✗ miss' : 'open');
+      var hitClr = hit === true ? '#6ee7b7' : (hit === false ? '#fda4af' : '#94a3b8');
+      return '<div class="sig-row">' +
+        '<strong>' + escapeHtml(s.pattern || '') + '</strong> → ' + escapeHtml(s.predicts || '') +
+        ' · outcome ' + escapeHtml(String(s.outcome || '—')) +
+        ' · <span style="color:' + hitClr + ';">' + hitTxt + '</span>' +
+        '<br/><span class="muted">' + escapeHtml(String(s.slug || '').slice(0, 42)) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function summarizeSide(si){
+    if (!si){
+      return '<span class="muted">— no data yet —</span>';
+    }
+    const pnl = Number(si.pnl_usd_settled)||0;
+    const pnlCls = pnl>=0?'pos':'neg';
+    var lines = '';
+    lines += '<strong>fills</strong> '+ si.trades_total + ' &nbsp;(open '+ si.trades_open +', settled '+ si.trades_settled +')<br/>';
+    lines += '<strong>win%</strong> '+ fmtPctMaybe(si.win_pct_decided) + ' · <strong>W–L–P:</strong> ' + si.wins +'–'+si.losses +'–'+si.pushes+'<br/>';
+    lines += '<strong>PnL (settled only)</strong> <span class="'+pnlCls+'" style="font-weight:700;">'+(pnl>=0?'+':'') + pnl.toFixed(4) + ' USD</span>';
+    return lines;
+  }
+
+  function oddsTable(rows, tblId){
+    const tb = $(tblId);
+    tb.querySelector('thead').innerHTML = '<tr>'
+      + ['odds¢','fills','closed','WIN','LOSS','PUSH','open','win%(dec.)','PnL $'].map(h=>'<th>'+h+'</th>').join('')
+      + '</tr>';
+    const body = tb.querySelector('tbody');
+    if (!rows.length){
+      body.innerHTML = '<tr><td colspan="9" class="muted">No buckets yet · wait for recorder + candles</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(r=>{
+      var pnl = Number(r.pnl_usd)||0;
+      var pnlCls = pnl>=0?'pos':'neg';
+      return '<tr>'
+        + '<td>'+escapeHtml(String(r.odds_label || String(r.odds_cents)+"¢"))+'</td>'
+        + '<td>'+r.trades+'</td>'
+        + '<td>'+(r.wins+r.losses+r.pushes)+'</td>'
+        + '<td style="color:#6ee7b7;">'+r.wins+'</td>'
+        + '<td style="color:#fda4af;">'+r.losses+'</td>'
+        + '<td>'+r.pushes+'</td>'
+        + '<td>'+r.open+'</td>'
+        + '<td>'+fmtPctMaybe(r.win_pct_decided)+'</td>'
+        + '<td class="'+pnlCls+'" style="font-weight:600;">'+ (pnl>=0?'+':'') + pnl.toFixed(4) +'</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  function windowsRender(ws){
+    const box=$('windows-box');
+    if (!ws.length){
+      box.innerHTML = '<span class="muted">No slug groups in CSV yet…</span>';
+      return;
+    }
+    box.innerHTML = ws.map(w=>{
+      return '<div class="wk">' +
+        '<b>'+escapeHtml(w.slug.slice(0,38))+(w.slug.length>38?'…':'')+'</b><br>' +
+        'signal <strong>'+escapeHtml(w.signal)+'</strong> · secs left '+ (w.seconds_left_approx||'') + '<br>' +
+        'PTB '+ fmtUsd(w.ptb_usd) +
+        '<br>m1 BTC close '+escapeHtml(String(w.candle1_close_btc ?? '—')) +
+        '<br>m2 BTC close '+escapeHtml(String(w.candle2_close_btc ?? '—')) +
+        '<br>settlement '+escapeHtml(String(w.settlement_btc_preview ?? '—')) +
+        ' <span style="color:#475569;border:1px solid #1e293b;border-radius:4px;padding:0 6px;margin-left:4px;font-size:10px;text-transform:uppercase;">'+escapeHtml(w.settlement_label||'')+'</span>' +
+        '<div class="muted" style="margin-top:4px;font-size:10px;">trades='+w.trades_in_window+' · '+escapeHtml(w.last_iso)+'</div>'+
+        '</div>';
+    }).join('');
+  }
+
+  function tradesRender(trs){
+    const head = $('tr-thead').querySelector('tr');
+    head.innerHTML = ['UTC time','Slug','Side','Ask live','Exe limit','odds¢','Outcome','PnL $'].map(c=>'<th>'+c+'</th>').join('');
+    $('tr-body').innerHTML = (!trs||!trs.length) ? '<tr><td colspan="8"><span class="muted">Nothing yet · run recorder & come back.</span></td></tr>' :
+      trs.map(t=>{
+        const pnl=t.pnl_usd;
+        let pnlCls = 'muted';
+        if (pnl!=null){ pnlCls=(Number(pnl)>=0)?'pos':'neg'; }
+        const out = escapeHtml(String(t.result||'OPEN'));
+        return '<tr>' +
+          '<td>'+escapeHtml(String(t.timestamp_utc_iso||''))+'</td>' +
+          '<td style="max-width:170px;font-size:10px;line-height:1.3;">'+escapeHtml(String((t.slug||'').substring(0,28)))+(t.slug.length>28?'…':'')+'</td>' +
+          '<td><strong>'+escapeHtml(String(t.side||''))+'</strong></td>' +
+          '<td>'+(t.ask_live==null?'—':(Number(t.ask_live)*100).toFixed(1)+'%')+'</td>' +
+          '<td>'+(t.limit_px==null?'—':(Number(t.limit_px)*100).toFixed(1)+'%')+'</td>' +
+          '<td>'+escapeHtml(String(t.odds_label||((t.odds_cents+'¢'))))+'</td>' +
+          '<td>'+out+'</td>' +
+          '<td class="'+pnlCls+'">'+(pnl==null?'—':(pnl>=0?'+':'')+Number(pnl).toFixed(4))+'</td>' +
+          '</tr>';
+      }).join('');
+  }
+
+  function schedule(){ if(timer)clearInterval(timer); timer=setInterval(function(){ if(!paused)refresh(); }, 4700);}
+  $('btn-load').onclick = refresh;
+  $('btn-pause').onclick = function(){
+    paused=!paused;
+    $('btn-pause').textContent = paused ? 'Resume auto-refresh' : 'Pause auto-refresh';
+    if (!paused) refresh();
+    schedule();
+  };
+  refresh(); schedule();
+})();
+</script>
+</body>
+</html>
+</body>
+</html>

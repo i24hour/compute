@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>5m Algo · Polymarket UP @ 71¢</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #0a0f1a; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px; }
+    .top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .top a { color: #93c5fd; }
+    .hero { background: linear-gradient(135deg,#1e1b4b,#0f172a); border: 1px solid #4338ca; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+    .hero h1 { margin: 0 0 8px 0; font-size: 1.25rem; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .live { background: #14532d; color: #bbf7d0; }
+    .dry { background: #422006; color: #fde68a; }
+    .off { background: #450a0a; color: #fecaca; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(150px,1fr)); gap: 10px; margin: 14px 0; }
+    .stat { background: #111827; border: 1px solid #1f2937; border-radius: 8px; padding: 10px 12px; }
+    .stat b { display: block; font-size: 10px; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
+    .stat span { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    .card h3 { margin: 0 0 10px 0; font-size: 1rem; border-bottom: 1px solid #1f2937; padding-bottom: 8px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { text-align: left; color: #64748b; padding: 6px 8px 6px 0; border-bottom: 1px solid #1f2937; }
+    td { padding: 6px 8px 6px 0; border-bottom: 1px solid #0f172a; font-variant-numeric: tabular-nums; }
+    .sig-UP { color: #4ade80; font-weight: 700; }
+    .sig-NONE, .sig-NO_DATA { color: #94a3b8; }
+    .sig-PENDING { color: #fbbf24; }
+    .err { background: #450a0a; color: #fecaca; padding: 10px; border-radius: 8px; margin-bottom: 12px; display: none; }
+    .muted { color: #64748b; font-size: 12px; }
+    pre { background: #0f172a; padding: 10px; border-radius: 8px; overflow: auto; font-size: 11px; max-height: 200px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <span class="muted">5m market only · Chainlink 1m candles vs PTB</span>
+    <div>
+      <a href="/candles">Candles</a> · <a href="/livetest">Paper test</a> · <a href="/live">Live tape</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>Algo · BUY UP @ 71¢ on 5m window</h1>
+    <p class="muted" style="margin:0 0 10px 0;">
+      When minute-1 <strong>and</strong> minute-2 Chainlink closes are both <strong>above PTB</strong>,
+      place a limit BUY on the <strong>UP</strong> token at <strong>71¢</strong> (once per window).
+    </p>
+    <span id="mode-badge" class="badge dry">—</span>
+    <span id="run-badge" class="badge off" style="margin-left:6px;">—</span>
+    <p id="status-line" class="muted" style="margin-top:10px;margin-bottom:0;">Loading…</p>
+  </div>
+
+  <div id="err-box" class="err"></div>
+
+  <div class="grid" id="stats"></div>
+
+  <div class="card">
+    <h3>Current 5m market</h3>
+    <div id="market-box" class="muted">—</div>
+  </div>
+
+  <div class="card">
+    <h3>Orders (newest first)</h3>
+    <div style="overflow-x:auto;">
+      <table><thead><tr>
+        <th>Time</th><th>Slug</th><th>Side</th><th>Price</th><th>Size</th><th>Status</th><th>C1 / C2 vs PTB</th>
+      </tr></thead><tbody id="orders-body"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Event log</h3>
+    <pre id="events-box"></pre>
+  </div>
+
+<script>
+(function(){
+  function fmtUsd(n){ if(n==null||isNaN(n)) return '—'; return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fmtPct(p){ if(p==null||isNaN(p)) return '—'; return (Number(p)*100).toFixed(0)+'¢'; }
+  function sigClass(s){ return 'sig-'+(s||'PENDING'); }
+
+  async function refresh(){
+    const r = await fetch('/api/algo');
+    const j = await r.json();
+    if(!r.ok){ document.getElementById('err-box').style.display='block'; document.getElementById('err-box').textContent=j.error||'API error'; return; }
+    document.getElementById('err-box').style.display='none';
+
+    const mb = document.getElementById('mode-badge');
+    if(j.live_trading){ mb.className='badge live'; mb.textContent='LIVE TRADING'; }
+    else { mb.className='badge dry'; mb.textContent='DRY RUN (no real orders)'; }
+
+    const rb = document.getElementById('run-badge');
+    if(j.running){ rb.className='badge live'; rb.textContent='TRADER RUNNING'; }
+    else { rb.className='badge off'; rb.textContent='TRADER STOPPED'; }
+
+    document.getElementById('status-line').textContent =
+      'Updated '+ (j.updated_at||'—') + (j.last_error ? ' · last error: '+j.last_error : '');
+
+    const m = j.current_market;
+    const sig = j.signal || 'PENDING';
+    document.getElementById('stats').innerHTML = [
+      ['Signal', '<span class="'+sigClass(sig)+'">'+sig+'</span>'],
+      ['Chainlink', fmtUsd(j.chainlink_price)],
+      ['PTB', fmtUsd(j.ptb_usd)],
+      ['M1 close', fmtUsd(j.candle1_close)],
+      ['M2 close', fmtUsd(j.candle2_close)],
+      ['Into window', (j.seconds_into_window!=null? j.seconds_into_window+'s':'—')],
+      ['Limit', fmtPct(j.strategy&&j.strategy.limit_price)],
+    ].map(function(row){ return '<div class="stat"><b>'+row[0]+'</b><span>'+row[1]+'</span></div>'; }).join('');
+
+    if(m){
+      document.getElementById('market-box').innerHTML =
+        '<strong>'+ (m.title||m.slug) +'</strong><br>'+
+        'slug: <code>'+m.slug+'</code><br>'+
+        'window: '+ new Date(m.window_start*1000).toISOString().slice(11,19)+'Z → '+
+        new Date(m.window_end*1000).toISOString().slice(11,19)+'Z · '+
+        (m.seconds_left!=null? m.seconds_left+'s left':'') +
+        '<br>UP token: <code style="font-size:10px">'+ (m.up_token||'').slice(0,20)+'…</code>';
+    } else {
+      document.getElementById('market-box').textContent = 'No active 5m market found';
+    }
+
+    const orders = j.orders || [];
+    document.getElementById('orders-body').innerHTML = orders.length ? orders.map(function(o){
+      return '<tr><td>'+(o.ts||'').slice(11,19)+'Z</td><td style="max-width:140px;font-size:10px">'+(o.slug||'').slice(0,22)+'…</td>'+
+        '<td>'+(o.side||'')+'</td><td>'+fmtPct(o.price)+'</td><td>'+(o.size||'')+'</td>'+
+        '<td><strong>'+(o.status||'')+'</strong>'+(o.error?'<br><span style="color:#f87171">'+o.error+'</span>':'')+'</td>'+
+        '<td>'+fmtUsd(o.candle1_close)+' / '+fmtUsd(o.candle2_close)+' vs '+fmtUsd(o.ptb_usd)+'</td></tr>';
+    }).join('') : '<tr><td colspan="7" class="muted">No orders yet</td></tr>';
+
+    const ev = j.events || [];
+    document.getElementById('events-box').textContent = ev.length
+      ? ev.map(function(e){ return e.ts+' ['+e.type+'] '+e.msg+(e.error?' — '+e.error:''); }).join('\n')
+      : 'No events';
+  }
+  refresh();
+  setInterval(refresh, 1500);
+})();
+</script>
+</body>
+</html>

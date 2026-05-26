@@ -1,0 +1,6 @@
+# Dashboard: backtest UI + embedded Polymarket live WS (poly_live_ticker)
+flask>=3.0.0
+pandas>=2.1.0
+numpy>=1.26.0
+aiohttp>=3.9.0
+websockets>=12.0

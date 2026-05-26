@@ -1,0 +1,37 @@
+# Secrets
+algo/.env
+
+# Dependencies
+algo/node_modules/
+dashboard_venv/
+.venv/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+
+# Local runtime / logs
+data/*.log
+data/dashboard*.log
+dashboard/app_runner.log
+/tmp/
+
+# Large generated data (keep locally; regenerate via scripts)
+data/*.csv
+data/*.sqlite
+data/*.db
+data/per_ticker/
+dashboard/btc_cache.db
+
+# Local state
+data/algo_state.json
+data/livetest_live_state.json
+data/algo_traded_slugs.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

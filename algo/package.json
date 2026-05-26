@@ -1,0 +1,17 @@
+{
+  "name": "poly-5m-algo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node trader.mjs",
+    "dry-run": "ALGO_LIVE=0 node trader.mjs",
+    "setup-creds": "node scripts/setup-creds.mjs"
+  },
+  "dependencies": {
+    "@polymarket/clob-client-v2": "^1.0.6",
+    "dotenv": "^17.2.0",
+    "viem": "^2.46.3",
+    "ws": "^8.18.3"
+  }
+}

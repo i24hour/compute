@@ -1,0 +1,153 @@
+2026-05-09 18:48:01,150 [INFO    ] kalshi_pipeline.main: ────────────────────────────────────────────────────────────
+2026-05-09 18:48:01,150 [INFO    ] kalshi_pipeline.main:   Kalshi BTC 15-Minute Candlestick Pipeline
+2026-05-09 18:48:01,150 [INFO    ] kalshi_pipeline.main:   Date range : 2025-01-01 → 2026-05-08
+2026-05-09 18:48:01,150 [INFO    ] kalshi_pipeline.main:   Series     : KXBTC15M
+2026-05-09 18:48:01,150 [INFO    ] kalshi_pipeline.main:   Workers    : 3
+2026-05-09 18:48:01,151 [INFO    ] kalshi_pipeline.main: ────────────────────────────────────────────────────────────
+2026-05-09 18:48:01,152 [INFO    ] kalshi_pipeline.main: Phase 1/4 — Discovering BTC 15-minute markets…
+2026-05-09 18:48:02,014 [INFO    ] kalshi_pipeline.market_discovery: Historical cutoff: 2026-03-10T00:00:00Z  (unix=1773100800)
+2026-05-09 18:48:02,014 [INFO    ] kalshi_pipeline.market_discovery: Fetching HISTORICAL markets for series 'KXBTC15M'…
+2026-05-09 18:48:08,656 [INFO    ] kalshi_pipeline.market_discovery:   → 8066 historical markets in range for 'KXBTC15M'
+2026-05-09 18:48:08,656 [INFO    ] kalshi_pipeline.market_discovery: Fetching LIVE markets for series 'KXBTC15M'…
+2026-05-09 18:48:13,693 [INFO    ] kalshi_pipeline.market_discovery:   → 6313 live markets in range for 'KXBTC15M'
+2026-05-09 18:48:13,715 [INFO    ] kalshi_pipeline.market_discovery: Discovery complete: 13719 markets total  (8066 historical, 5653 live).
+2026-05-09 18:48:13,716 [INFO    ] kalshi_pipeline.main: Phase 1/4 complete: 13719 total markets discovered.
+2026-05-09 18:48:13,716 [INFO    ] kalshi_pipeline.main: Phase 2/4 — Loading checkpoint…
+2026-05-09 18:48:13,727 [INFO    ] kalshi_pipeline.main: Phase 2/4 complete: 0 already done, 13719 pending.  (Prior total: 0 rows across 0 tickers.)
+2026-05-09 18:48:13,728 [INFO    ] kalshi_pipeline.main: Phase 3/4 — Fetching candlesticks for 13719 markets (workers=3)…
+2026-05-09 18:48:15,815 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:48:16,585 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:49:21,549 [INFO    ] kalshi_pipeline.main: ────────────────────────────────────────────────────────────
+2026-05-09 18:49:21,549 [INFO    ] kalshi_pipeline.main:   Kalshi BTC 15-Minute Candlestick Pipeline
+2026-05-09 18:49:21,549 [INFO    ] kalshi_pipeline.main:   Date range : 2025-01-01 → 2026-05-08
+2026-05-09 18:49:21,550 [INFO    ] kalshi_pipeline.main:   Series     : KXBTC15M
+2026-05-09 18:49:21,550 [INFO    ] kalshi_pipeline.main:   Workers    : 2
+2026-05-09 18:49:21,550 [INFO    ] kalshi_pipeline.main: ────────────────────────────────────────────────────────────
+2026-05-09 18:49:21,551 [INFO    ] kalshi_pipeline.main: Phase 1/4 — Discovering BTC 15-minute markets…
+2026-05-09 18:49:22,348 [INFO    ] kalshi_pipeline.market_discovery: Historical cutoff: 2026-03-10T00:00:00Z  (unix=1773100800)
+2026-05-09 18:49:22,348 [INFO    ] kalshi_pipeline.market_discovery: Fetching HISTORICAL markets for series 'KXBTC15M'…
+2026-05-09 18:49:28,205 [INFO    ] kalshi_pipeline.market_discovery:   → 8066 historical markets in range for 'KXBTC15M'
+2026-05-09 18:49:28,207 [INFO    ] kalshi_pipeline.market_discovery: Fetching LIVE markets for series 'KXBTC15M'…
+2026-05-09 18:49:31,368 [INFO    ] kalshi_pipeline.market_discovery:   → 6313 live markets in range for 'KXBTC15M'
+2026-05-09 18:49:31,379 [INFO    ] kalshi_pipeline.market_discovery: Discovery complete: 13719 markets total  (8066 historical, 5653 live).
+2026-05-09 18:49:31,380 [INFO    ] kalshi_pipeline.main: Phase 1/4 complete: 13719 total markets discovered.
+2026-05-09 18:49:31,380 [INFO    ] kalshi_pipeline.main: Phase 2/4 — Loading checkpoint…
+2026-05-09 18:49:31,390 [INFO    ] kalshi_pipeline.main: Phase 2/4 complete: 37 already done, 13682 pending.  (Prior total: 545 rows across 37 tickers.)
+2026-05-09 18:49:31,390 [INFO    ] kalshi_pipeline.main: Phase 3/4 — Fetching candlesticks for 13682 markets (workers=2)…
+2026-05-09 18:49:39,234 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:50:16,609 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:50:52,193 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:51:30,151 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:52:09,644 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:52:45,256 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:53:25,181 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:54:00,388 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:54:35,968 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:55:11,830 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:55:47,679 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:56:25,071 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:57:07,925 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:57:44,056 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:58:25,888 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:59:01,397 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 18:59:38,252 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:00:17,457 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:00:57,797 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:01:46,284 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:02:21,394 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:03:29,842 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:04:07,301 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:05:07,136 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:05:48,301 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:06:28,056 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:07:05,465 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:07:49,728 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:08:37,689 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:09:20,049 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:09:55,986 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:11:00,083 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:11:35,699 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:12:11,320 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:12:50,183 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:13:25,246 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:14:01,804 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:14:44,834 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:15:20,249 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:16:06,682 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:16:46,240 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:17:29,100 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:18:06,217 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:18:43,838 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:19:22,057 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:19:57,747 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:20:31,484 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:21:06,511 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:21:41,625 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:22:18,759 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:22:57,081 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:23:33,192 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:24:09,583 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:24:49,119 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:25:23,724 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:26:05,762 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:26:43,870 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:27:21,597 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:27:54,940 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:28:30,707 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:29:06,483 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:29:42,437 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:30:20,725 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:31:15,501 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:31:51,811 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:32:33,666 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:33:30,984 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:34:11,077 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:34:57,040 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:34:57,335 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:35:40,045 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:36:19,658 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:36:55,136 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:37:37,991 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:38:19,335 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:39:03,505 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:39:51,189 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:42:09,500 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:43:39,570 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:45:46,033 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:46:37,633 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:47:37,197 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:48:20,891 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:49:05,559 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:49:43,814 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:51:42,551 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:52:23,605 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:53:02,947 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:53:54,738 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:55:23,338 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:56:04,206 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:56:39,632 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:57:14,486 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:58:04,313 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:58:40,813 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:59:16,400 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 19:59:55,009 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:00:29,943 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:01:05,433 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:04:53,346 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:05:28,174 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:06:06,087 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:06:54,141 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:07:55,179 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:08:37,329 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:09:18,917 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:10:05,971 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:11:00,975 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:11:43,521 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:12:23,514 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:13:02,603 [WARNING ] kalshi_pipeline.retry_utils: Rate-limited (429). Waiting 30s before retry 1/5.
+2026-05-09 20:14:15,076 [INFO    ] kalshi_pipeline.main: Phase 3/4 complete: 203013 rows collected.  0 errors.
+2026-05-09 20:14:15,093 [INFO    ] kalshi_pipeline.main: Phase 4/4 — Finalising merged CSV…
+2026-05-09 20:14:15,097 [INFO    ] kalshi_pipeline.exporter: Finalising merged CSV: de-dup + sort…
+2026-05-09 20:14:22,742 [INFO    ] kalshi_pipeline.exporter: Merged CSV finalised: 203558 → 203558 rows  (./data/btc_15m_candlesticks_merged.csv)
+2026-05-09 20:14:22,748 [INFO    ] kalshi_pipeline.main: Phase 4/4 complete: ./data/btc_15m_candlesticks_merged.csv
+2026-05-09 20:14:22,748 [INFO    ] kalshi_pipeline.main: Pipeline finished successfully.
