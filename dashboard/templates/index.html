@@ -1,391 +1,763 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/>
-  <meta http-equiv="Pragma" content="no-cache"/>
-  <title>Polymarket BTC Strategy Backtester</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    body { background: #0f1117; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
-    .card { background: #1a1d27; border: 1px solid #2d3148; border-radius: 12px; }
-    .stat-card { background: linear-gradient(135deg, #1a1d27 0%, #1e2235 100%); border: 1px solid #2d3148; border-radius: 12px; }
-    .btn-primary { background: #6366f1; color: #fff; border-radius: 8px; padding: 0.5rem 1.25rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    .btn-primary:hover { background: #4f52e0; }
-    .btn-primary:disabled { background: #3a3d5c; cursor: not-allowed; }
-    input[type=date], input[type=number] {
-      background: #0f1117; border: 1px solid #2d3148; border-radius: 6px;
-      color: #e2e8f0; padding: 0.35rem 0.6rem; width: 100%;
-    }
-    input:focus { outline: none; border-color: #6366f1; }
-    .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-    .tag-win  { background: #064e3b; color: #34d399; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .tag-loss { background: #450a0a; color: #f87171; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .tag-l1   { background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .tag-l2   { background: #3b1f5e; color: #c084fc; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .tag-up   { background: #14532d; color: #4ade80; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    .tag-down { background: #450a0a; color: #fca5a5; padding: 2px 8px; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
-    #progress-bar { transition: width 0.4s ease; }
-    .progress-container { background: #1a1d27; border-radius: 9999px; height: 8px; overflow: hidden; }
-    table { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
-    th { color: #64748b; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 12px; border-bottom: 1px solid #2d3148; text-align: left; cursor: pointer; }
-    th:hover { color: #94a3b8; }
-    td { padding: 7px 12px; border-bottom: 1px solid #1e2235; }
-    tr:hover td { background: #1e2235; }
-    .pnl-pos { color: #34d399; font-weight: 600; }
-    .pnl-neg { color: #f87171; font-weight: 600; }
-    .spinner { border: 3px solid #2d3148; border-top: 3px solid #6366f1; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .tooltip { position: relative; }
-    .tooltip:hover::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #1e2235; color: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.72rem; white-space: nowrap; z-index: 100; border: 1px solid #2d3148; }
-  </style>
-</head>
-<body class="min-h-screen p-4 md:p-6">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-store, no-cache, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <title>Polymarket BTC Strategy Backtester</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+      body {
+        background: #0f1117;
+        color: #e2e8f0;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      .card {
+        background: #1a1d27;
+        border: 1px solid #2d3148;
+        border-radius: 12px;
+      }
+      .stat-card {
+        background: linear-gradient(135deg, #1a1d27 0%, #1e2235 100%);
+        border: 1px solid #2d3148;
+        border-radius: 12px;
+      }
+      .btn-primary {
+        background: #6366f1;
+        color: #fff;
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-primary:hover {
+        background: #4f52e0;
+      }
+      .btn-primary:disabled {
+        background: #3a3d5c;
+        cursor: not-allowed;
+      }
+      input[type="date"],
+      input[type="number"] {
+        background: #0f1117;
+        border: 1px solid #2d3148;
+        border-radius: 6px;
+        color: #e2e8f0;
+        padding: 0.35rem 0.6rem;
+        width: 100%;
+      }
+      input:focus {
+        outline: none;
+        border-color: #6366f1;
+      }
+      .label {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+      }
+      .tag-win {
+        background: #064e3b;
+        color: #34d399;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .tag-loss {
+        background: #450a0a;
+        color: #f87171;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .tag-l1 {
+        background: #1e3a5f;
+        color: #60a5fa;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .tag-l2 {
+        background: #3b1f5e;
+        color: #c084fc;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .tag-up {
+        background: #14532d;
+        color: #4ade80;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .tag-down {
+        background: #450a0a;
+        color: #fca5a5;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      #progress-bar {
+        transition: width 0.4s ease;
+      }
+      .progress-container {
+        background: #1a1d27;
+        border-radius: 9999px;
+        height: 8px;
+        overflow: hidden;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 0.82rem;
+      }
+      th {
+        color: #64748b;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        padding: 8px 12px;
+        border-bottom: 1px solid #2d3148;
+        text-align: left;
+        cursor: pointer;
+      }
+      th:hover {
+        color: #94a3b8;
+      }
+      td {
+        padding: 7px 12px;
+        border-bottom: 1px solid #1e2235;
+      }
+      tr:hover td {
+        background: #1e2235;
+      }
+      .pnl-pos {
+        color: #34d399;
+        font-weight: 600;
+      }
+      .pnl-neg {
+        color: #f87171;
+        font-weight: 600;
+      }
+      .spinner {
+        border: 3px solid #2d3148;
+        border-top: 3px solid #6366f1;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .tooltip {
+        position: relative;
+      }
+      .tooltip:hover::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: 120%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e2235;
+        color: #e2e8f0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.72rem;
+        white-space: nowrap;
+        z-index: 100;
+        border: 1px solid #2d3148;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen p-4 md:p-6">
+    {% include "nav.html" %}
 
-<!-- Inline only: always visible even if Tailwind CDN fails or homepage is cached -->
-<div style="background:#047857;color:#ecfdf5;padding:14px 18px;margin-bottom:20px;border-radius:10px;border:2px solid #6ee7b7;font-family:system-ui,sans-serif;font-size:14px;line-height:1.55;">
-  <strong style="color:#fef9c3;">LIVE TEST</strong> — If you do not see the green &ldquo;Live test&rdquo; card under the title,
-  <a href="/live" style="color:#fef08a;font-weight:700;margin:0 6px;">open <code style="background:#065f46;padding:2px 8px;border-radius:4px;color:#fef08a;">/live</code></a>
-  (dedicated page, no Tailwind). Restart <code style="background:#065f46;padding:2px 6px;border-radius:4px;">dashboard/app.py</code> after pulling changes.
-</div>
-<!-- ── Header + embedded live feed (must stay visible above fold) ───────── -->
-<div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-6">
-  <div class="flex-1 min-w-0">
-    <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-      <span class="text-indigo-400">▲▼</span>
-      Polymarket BTC Strategy Backtester
-    </h1>
-    <p class="text-slate-400 text-sm mt-0.5">Deviate-from-price-to-beat trigger strategy · BTC Up/Down 15-min markets · live board shows 5m + 15m together</p>
+    <!-- Inline only: always visible even if Tailwind CDN fails or homepage is cached -->
+    <div
+      style="
+        background: #047857;
+        color: #ecfdf5;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        border: 2px solid #6ee7b7;
+        font-family: system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.55;
+      "
+    >
+      <strong style="color: #fef9c3">LIVE TEST</strong> — If you do not see the
+      green &ldquo;Live test&rdquo; card under the title,
+      <a href="/live" style="color: #fef08a; font-weight: 700; margin: 0 6px"
+        >open
+        <code
+          style="
+            background: #065f46;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #fef08a;
+          "
+          >/live</code
+        ></a
+      >
+      (dedicated page, no Tailwind). Restart
+      <code style="background: #065f46; padding: 2px 6px; border-radius: 4px"
+        >dashboard/app.py</code
+      >
+      after pulling changes.
+    </div>
+    <!-- ── Header + embedded live feed (must stay visible above fold) ───────── -->
+    <div
+      class="flex flex-col xl:flex-row xl:items-start justify-between gap-4 mb-6"
+    >
+      <div class="flex-1 min-w-0">
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span class="text-indigo-400">▲▼</span>
+          Polymarket BTC Strategy Backtester
+        </h1>
+        <p class="text-slate-400 text-sm mt-0.5">
+          Deviate-from-price-to-beat trigger strategy · BTC Up/Down 15-min
+          markets · live board shows 5m + 15m together
+        </p>
 
-    <!-- Live Polymarket 5m / 15m (same feeds as poly_live_ticker.py) -->
-    <div id="live-panel" class="card mt-4 p-4 ring-2 ring-emerald-500/40 bg-gradient-to-br from-emerald-950/30 to-[#1a1d27]" style="min-height: 8rem;">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <h2 class="text-base font-semibold text-emerald-300 flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Live test · Polymarket BTC 5m + 15m
-        </h2>
-        <span id="live-status" class="text-xs text-slate-400 font-mono">Starting feed…</span>
-      </div>
-      <p class="text-xs text-slate-500 mb-3">Updates every ~1.5s from <code class="text-slate-400">/api/poly_live</code> · CLOB order books · Chainlink BTC (PTB)</p>
-      <div id="live-btc-row" class="flex flex-wrap items-baseline gap-3 mb-4">
-        <span class="text-xs text-slate-500 uppercase tracking-wide">BTC spot (RTDS)</span>
-        <span id="live-btc" class="text-2xl font-mono text-amber-300">—</span>
-        <span id="live-btc-age" class="text-xs text-slate-500"></span>
-      </div>
-      <div id="live-markets" class="space-y-4">
-        <p class="text-slate-400 text-sm">Connecting to Polymarket WebSockets…</p>
-      </div>
-      <p class="text-xs text-slate-600 mt-4" id="live-note"></p>
-    </div>
-  </div>
-  <div class="flex flex-col items-start xl:items-end gap-2 shrink-0">
-    <div id="status-pill" class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-slate-800 text-slate-400">
-      <span id="status-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-      <span id="status-text">Initialising…</span>
-    </div>
-    <p class="text-[10px] text-slate-600 max-w-[14rem] xl:text-right leading-relaxed">
-      Live = Polymarket. Backtest below = Kalshi CSV + Binance cache (historical).
-    </p>
-  </div>
-</div>
-
-<!-- ── BTC Data Progress ───────────────────────────────────────────────── -->
-<div id="fetch-panel" class="card p-4 mb-5 hidden">
-  <div class="flex items-center justify-between mb-2">
-    <span class="text-sm font-medium text-slate-300">Downloading BTC spot data (Binance · one-time cache)</span>
-    <span id="fetch-pct" class="text-indigo-400 font-mono text-sm">0%</span>
-  </div>
-  <div class="progress-container">
-    <div id="progress-bar" class="h-full bg-indigo-500" style="width:0%"></div>
-  </div>
-  <p class="text-xs text-slate-500 mt-1.5">~2–3 min for full Dec 2025–May 2026 history · cached permanently after this</p>
-</div>
-
-<!-- ── Controls ────────────────────────────────────────────────────────── -->
-<div class="card p-4 mb-5">
-  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end">
-
-    <div>
-      <div class="label">From date</div>
-      <input type="date" id="start-date" value="2026-01-01"/>
-    </div>
-    <div>
-      <div class="label">To date</div>
-      <input type="date" id="end-date" value="2026-04-30"/>
-    </div>
-
-    <div class="tooltip" data-tip="BTC must deviate this % from price-to-beat to arm the L1 trigger">
-      <div class="label">L1 BTC % trigger</div>
-      <input type="number" id="l1-pct" value="0.050" step="0.001" min="0.001" max="5"/>
-    </div>
-    <div class="tooltip" data-tip="After L1 is armed, enter only if contract price reaches this (e.g. 60 = 60¢)">
-      <div class="label">L1 entry limit ¢</div>
-      <input type="number" id="l1-limit" value="60" step="1" min="1" max="99"/>
-    </div>
-
-    <div class="tooltip" data-tip="BTC must deviate this % from price-to-beat to arm the L2 trigger">
-      <div class="label">L2 BTC % trigger</div>
-      <input type="number" id="l2-pct" value="0.100" step="0.001" min="0.001" max="5"/>
-    </div>
-    <div class="tooltip" data-tip="After L2 is armed, enter only if contract price reaches this (e.g. 80 = 80¢)">
-      <div class="label">L2 entry limit ¢</div>
-      <input type="number" id="l2-limit" value="80" step="1" min="1" max="99"/>
-    </div>
-
-    <div class="tooltip" data-tip="Dollar amount risked per trade">
-      <div class="label">Position size $</div>
-      <input type="number" id="position-size" value="100" step="10" min="1"/>
-    </div>
-
-    <button id="run-btn" class="btn-primary" onclick="runBacktest()">
-      Run Backtest
-    </button>
-  </div>
-  <p class="text-xs text-slate-500 mt-3">
-    <strong class="text-slate-400">Strategy (2-stage):</strong>
-    <strong class="text-indigo-300">Stage 1</strong> — BTC touches <code class="text-indigo-300">±L1%</code> from price-to-beat → L1 trigger armed.
-    <strong class="text-purple-300">Stage 2</strong> — after arming, watch the order book: first minute where contract price ≤ <code class="text-indigo-300">L1 limit¢</code> → enter UP/DOWN.
-    Same flow for L2 at <code class="text-purple-300">±L2%</code> → limit <code class="text-purple-300">L2¢</code>.
-    Touch rule: BTC level checked on intraday high/low. Entry fires once per trigger per market.
-  </p>
-</div>
-
-<!-- ── Loading spinner ────────────────────────────────────────────────── -->
-<div id="loading" class="hidden flex flex-col items-center justify-center py-20 gap-4">
-  <div class="spinner"></div>
-  <p class="text-slate-400 text-sm">Running backtest…</p>
-</div>
-
-<!-- ── Error banner ───────────────────────────────────────────────────── -->
-<div id="error-banner" class="hidden card p-4 mb-5 border-red-800 bg-red-950 text-red-300 text-sm"></div>
-
-<!-- ── Summary Stats ──────────────────────────────────────────────────── -->
-<div id="results" class="hidden">
-  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
-    <div class="stat-card p-3 col-span-1">
-      <div class="label">Total Trades</div>
-      <div class="text-2xl font-bold text-white" id="s-total">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Wins</div>
-      <div class="text-2xl font-bold text-emerald-400" id="s-wins">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Losses</div>
-      <div class="text-2xl font-bold text-red-400" id="s-losses">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Win Rate</div>
-      <div class="text-2xl font-bold text-indigo-400" id="s-winrate">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Total P&amp;L</div>
-      <div class="text-2xl font-bold" id="s-pnl">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Avg Trade P&amp;L</div>
-      <div class="text-xl font-bold" id="s-avg-pnl">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">Total Risked</div>
-      <div class="text-xl font-bold text-slate-300" id="s-risked">—</div>
-    </div>
-    <div class="stat-card p-3">
-      <div class="label">ROI</div>
-      <div class="text-2xl font-bold" id="s-roi">—</div>
-    </div>
-  </div>
-
-  <!-- ── Charts row ───────────────────────────────────────────────── -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-
-    <!-- Cumulative P&L -->
-    <div class="card p-4 lg:col-span-2">
-      <h2 class="text-sm font-semibold text-slate-300 mb-3">Cumulative P&amp;L</h2>
-      <div style="height:240px">
-        <canvas id="pnl-chart"></canvas>
-      </div>
-    </div>
-
-    <!-- Win/Loss + Level breakdown side by side -->
-    <div class="flex flex-col gap-5">
-      <div class="card p-4 flex-1">
-        <h2 class="text-sm font-semibold text-slate-300 mb-3">Win / Loss Split</h2>
-        <div style="height:110px">
-          <canvas id="winloss-chart"></canvas>
+        <!-- Live Polymarket 5m / 15m (same feeds as poly_live_ticker.py) -->
+        <div
+          id="live-panel"
+          class="card mt-4 p-4 ring-2 ring-emerald-500/40 bg-gradient-to-br from-emerald-950/30 to-[#1a1d27]"
+          style="min-height: 8rem"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2
+              class="text-base font-semibold text-emerald-300 flex items-center gap-2"
+            >
+              <span
+                class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"
+              ></span>
+              Live test · Polymarket BTC 5m + 15m
+            </h2>
+            <span id="live-status" class="text-xs text-slate-400 font-mono"
+              >Starting feed…</span
+            >
+          </div>
+          <p class="text-xs text-slate-500 mb-3">
+            Updates every ~1.5s from
+            <code class="text-slate-400">/api/poly_live</code> · CLOB order
+            books · Chainlink BTC (PTB)
+          </p>
+          <div
+            id="live-btc-row"
+            class="flex flex-wrap items-baseline gap-3 mb-4"
+          >
+            <span class="text-xs text-slate-500 uppercase tracking-wide"
+              >BTC spot (RTDS)</span
+            >
+            <span id="live-btc" class="text-2xl font-mono text-amber-300"
+              >—</span
+            >
+            <span id="live-btc-age" class="text-xs text-slate-500"></span>
+          </div>
+          <div id="live-markets" class="space-y-4">
+            <p class="text-slate-400 text-sm">
+              Connecting to Polymarket WebSockets…
+            </p>
+          </div>
+          <p class="text-xs text-slate-600 mt-4" id="live-note"></p>
         </div>
       </div>
-      <div class="card p-4 flex-1">
-        <h2 class="text-sm font-semibold text-slate-300 mb-2">By Trigger Level</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Level</th><th>Trades</th><th>Wins</th><th>P&amp;L</th>
-            </tr>
-          </thead>
-          <tbody id="level-table"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Trade log ────────────────────────────────────────────────── -->
-  <div class="card p-4">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold text-slate-300">Trade Log
-        <span id="trade-count" class="text-slate-500 font-normal ml-1"></span>
-      </h2>
-        <div class="flex gap-2 text-xs">
-        <button onclick="filterTrades('all')"  id="f-all"  class="px-2 py-1 rounded bg-indigo-600 text-white">All</button>
-        <button onclick="filterTrades('WIN')"  id="f-win"  class="px-2 py-1 rounded bg-slate-700 text-slate-300">Wins</button>
-        <button onclick="filterTrades('LOSS')" id="f-loss" class="px-2 py-1 rounded bg-slate-700 text-slate-300">Losses</button>
-        <button onclick="filterTrades('UP')"   id="f-up"   class="px-2 py-1 rounded bg-slate-700 text-slate-300">UP</button>
-        <button onclick="filterTrades('DOWN')" id="f-down" class="px-2 py-1 rounded bg-slate-700 text-slate-300">DOWN</button>
-        <button onclick="filterTrades('L1')"   id="f-l1"   class="px-2 py-1 rounded bg-slate-700 text-slate-300">L1</button>
-        <button onclick="filterTrades('L2')"   id="f-l2"   class="px-2 py-1 rounded bg-slate-700 text-slate-300">L2</button>
+      <div class="flex flex-col items-start xl:items-end gap-2 shrink-0">
+        <div
+          id="status-pill"
+          class="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-slate-800 text-slate-400"
+        >
+          <span
+            id="status-dot"
+            class="w-2 h-2 rounded-full bg-slate-500"
+          ></span>
+          <span id="status-text">Initialising…</span>
+        </div>
+        <p
+          class="text-[10px] text-slate-600 max-w-[14rem] xl:text-right leading-relaxed"
+        >
+          Live = Polymarket. Backtest below = Kalshi CSV + Binance cache
+          (historical).
+        </p>
       </div>
     </div>
 
-    <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
-      <table>
-        <thead style="position:sticky;top:0;background:#1a1d27;z-index:10">
-          <tr>
-            <th onclick="sortBy('timestamp')">Time ↕</th>
-            <th onclick="sortBy('ticker')">Market</th>
-            <th onclick="sortBy('target_price')">PTB $</th>
-            <th onclick="sortBy('btc_price')">BTC $</th>
-            <th onclick="sortBy('deviation')">Dev %</th>
-            <th onclick="sortBy('trigger')">Trigger</th>
-            <th onclick="sortBy('direction')">UP/DN</th>
-            <th onclick="sortBy('limit_price')">Limit</th>
-            <th onclick="sortBy('entry_price')">Entry</th>
-            <th onclick="sortBy('pnl')">P&amp;L $</th>
-            <th onclick="sortBy('outcome')">Result</th>
-          </tr>
-        </thead>
-        <tbody id="trade-table"></tbody>
-      </table>
+    <!-- ── BTC Data Progress ───────────────────────────────────────────────── -->
+    <div id="fetch-panel" class="card p-4 mb-5 hidden">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium text-slate-300"
+          >Downloading BTC spot data (Binance · one-time cache)</span
+        >
+        <span id="fetch-pct" class="text-indigo-400 font-mono text-sm">0%</span>
+      </div>
+      <div class="progress-container">
+        <div
+          id="progress-bar"
+          class="h-full bg-indigo-500"
+          style="width: 0%"
+        ></div>
+      </div>
+      <p class="text-xs text-slate-500 mt-1.5">
+        ~2–3 min for full Dec 2025–May 2026 history · cached permanently after
+        this
+      </p>
     </div>
-  </div>
-</div>
 
-<script>
-// ── State ──────────────────────────────────────────────────────────────────
-let allTrades = [];
-let currentFilter = 'all';
-let sortCol = 'timestamp';
-let sortAsc = false;
-let pnlChart = null;
-let winlossChart = null;
+    <!-- ── Controls ────────────────────────────────────────────────────────── -->
+    <div class="card p-4 mb-5">
+      <div
+        class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 items-end"
+      >
+        <div>
+          <div class="label">From date</div>
+          <input type="date" id="start-date" value="2026-01-01" />
+        </div>
+        <div>
+          <div class="label">To date</div>
+          <input type="date" id="end-date" value="2026-04-30" />
+        </div>
 
-// ── Status polling ─────────────────────────────────────────────────────────
-function updateStatus() {
-  fetch('/api/status').then(r => r.json()).then(d => {
-    const fetch = d.btc_fetch;
-    const dot = document.getElementById('status-dot');
-    const txt = document.getElementById('status-text');
-    const panel = document.getElementById('fetch-panel');
+        <div
+          class="tooltip"
+          data-tip="BTC must deviate this % from price-to-beat to arm the L1 trigger"
+        >
+          <div class="label">L1 BTC % trigger</div>
+          <input
+            type="number"
+            id="l1-pct"
+            value="0.050"
+            step="0.001"
+            min="0.001"
+            max="5"
+          />
+        </div>
+        <div
+          class="tooltip"
+          data-tip="After L1 is armed, enter only if contract price reaches this (e.g. 60 = 60¢)"
+        >
+          <div class="label">L1 entry limit ¢</div>
+          <input
+            type="number"
+            id="l1-limit"
+            value="60"
+            step="1"
+            min="1"
+            max="99"
+          />
+        </div>
 
-    if (fetch.status === 'done') {
-      dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
-      txt.textContent = 'BTC data ready · Market data loaded';
-      panel.classList.add('hidden');
-    } else if (fetch.status === 'running') {
-      dot.className = 'w-2 h-2 rounded-full bg-yellow-400 animate-pulse';
-      txt.textContent = `Fetching BTC price history… ${fetch.pct}%`;
-      panel.classList.remove('hidden');
-      document.getElementById('progress-bar').style.width = fetch.pct + '%';
-      document.getElementById('fetch-pct').textContent = fetch.pct + '%';
-    } else if (fetch.status === 'error') {
-      dot.className = 'w-2 h-2 rounded-full bg-red-400';
-      txt.textContent = 'BTC fetch error';
-      showError('BTC data fetch failed: ' + (fetch.error || 'unknown error'));
-    } else {
-      dot.className = 'w-2 h-2 rounded-full bg-slate-500';
-      txt.textContent = 'Checking…';
-    }
-  });
-}
+        <div
+          class="tooltip"
+          data-tip="BTC must deviate this % from price-to-beat to arm the L2 trigger"
+        >
+          <div class="label">L2 BTC % trigger</div>
+          <input
+            type="number"
+            id="l2-pct"
+            value="0.100"
+            step="0.001"
+            min="0.001"
+            max="5"
+          />
+        </div>
+        <div
+          class="tooltip"
+          data-tip="After L2 is armed, enter only if contract price reaches this (e.g. 80 = 80¢)"
+        >
+          <div class="label">L2 entry limit ¢</div>
+          <input
+            type="number"
+            id="l2-limit"
+            value="80"
+            step="1"
+            min="1"
+            max="99"
+          />
+        </div>
 
-// Poll status every 2s
-setInterval(updateStatus, 2000);
-updateStatus();
+        <div class="tooltip" data-tip="Dollar amount risked per trade">
+          <div class="label">Position size $</div>
+          <input
+            type="number"
+            id="position-size"
+            value="100"
+            step="10"
+            min="1"
+          />
+        </div>
 
-// ── Live Polymarket panel (poly_live_ticker feeds via /api/poly_live) ──────
-let lastLiveData = null;
+        <button id="run-btn" class="btn-primary" onclick="runBacktest()">
+          Run Backtest
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 mt-3">
+        <strong class="text-slate-400">Strategy (2-stage):</strong>
+        <strong class="text-indigo-300">Stage 1</strong> — BTC touches
+        <code class="text-indigo-300">±L1%</code> from price-to-beat → L1
+        trigger armed. <strong class="text-purple-300">Stage 2</strong> — after
+        arming, watch the order book: first minute where contract price ≤
+        <code class="text-indigo-300">L1 limit¢</code> → enter UP/DOWN. Same
+        flow for L2 at <code class="text-purple-300">±L2%</code> → limit
+        <code class="text-purple-300">L2¢</code>. Touch rule: BTC level checked
+        on intraday high/low. Entry fires once per trigger per market.
+      </p>
+    </div>
 
-function liveMarketIv(m) {
-  const v = m.interval_minutes;
-  return v === 5 || v === 15 ? v : null;
-}
+    <!-- ── Loading spinner ────────────────────────────────────────────────── -->
+    <div
+      id="loading"
+      class="hidden flex flex-col items-center justify-center py-20 gap-4"
+    >
+      <div class="spinner"></div>
+      <p class="text-slate-400 text-sm">Running backtest…</p>
+    </div>
 
-function fmtLiveUsd(n) {
-  if (n == null || n === '') return '—';
-  return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function fmtLiveProb(s) {
-  if (s === null || s === undefined || s === '') return '—';
-  const x = parseFloat(s);
-  if (Number.isNaN(x)) return String(s);
-  return (x * 100).toFixed(1) + '%';
-}
-function renderLivePanel(data) {
-  lastLiveData = data;
-  const st = document.getElementById('live-status');
-  if (data.error) {
-    st.textContent = 'Error · ' + data.error;
-    st.className = 'text-xs text-red-400 font-mono';
-    return;
-  }
-  st.textContent = 'Streaming · msgs ' + (data.msg_count ?? 0).toLocaleString();
-  st.className = 'text-xs text-slate-500 font-mono';
+    <!-- ── Error banner ───────────────────────────────────────────────────── -->
+    <div
+      id="error-banner"
+      class="hidden card p-4 mb-5 border-red-800 bg-red-950 text-red-300 text-sm"
+    ></div>
 
-  document.getElementById('live-btc').textContent =
-    data.btc_usd != null ? fmtLiveUsd(data.btc_usd) : 'fetching…';
-  const ageEl = document.getElementById('live-btc-age');
-  if (data.btc_age_seconds != null && data.btc_usd != null)
-    ageEl.textContent = '(' + data.btc_age_seconds + 's ago)';
-  else ageEl.textContent = '';
+    <!-- ── Summary Stats ──────────────────────────────────────────────────── -->
+    <div id="results" class="hidden">
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-5">
+        <div class="stat-card p-3 col-span-1">
+          <div class="label">Total Trades</div>
+          <div class="text-2xl font-bold text-white" id="s-total">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Wins</div>
+          <div class="text-2xl font-bold text-emerald-400" id="s-wins">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Losses</div>
+          <div class="text-2xl font-bold text-red-400" id="s-losses">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Win Rate</div>
+          <div class="text-2xl font-bold text-indigo-400" id="s-winrate">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Total P&amp;L</div>
+          <div class="text-2xl font-bold" id="s-pnl">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Avg Trade P&amp;L</div>
+          <div class="text-xl font-bold" id="s-avg-pnl">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">Total Risked</div>
+          <div class="text-xl font-bold text-slate-300" id="s-risked">—</div>
+        </div>
+        <div class="stat-card p-3">
+          <div class="label">ROI</div>
+          <div class="text-2xl font-bold" id="s-roi">—</div>
+        </div>
+      </div>
 
-  document.getElementById('live-note').textContent = data.feed_note || '';
+      <!-- ── Charts row ───────────────────────────────────────────────── -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+        <!-- Cumulative P&L -->
+        <div class="card p-4 lg:col-span-2">
+          <h2 class="text-sm font-semibold text-slate-300 mb-3">
+            Cumulative P&amp;L
+          </h2>
+          <div style="height: 240px">
+            <canvas id="pnl-chart"></canvas>
+          </div>
+        </div>
 
-  const root = document.getElementById('live-markets');
-  const mkts = data.markets || [];
-  if (!mkts.length) {
-    root.innerHTML = '<p class="text-slate-500 text-sm">Discovering active windows…</p>';
-    return;
-  }
+        <!-- Win/Loss + Level breakdown side by side -->
+        <div class="flex flex-col gap-5">
+          <div class="card p-4 flex-1">
+            <h2 class="text-sm font-semibold text-slate-300 mb-3">
+              Win / Loss Split
+            </h2>
+            <div style="height: 110px">
+              <canvas id="winloss-chart"></canvas>
+            </div>
+          </div>
+          <div class="card p-4 flex-1">
+            <h2 class="text-sm font-semibold text-slate-300 mb-2">
+              By Trigger Level
+            </h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Level</th>
+                  <th>Trades</th>
+                  <th>Wins</th>
+                  <th>P&amp;L</th>
+                </tr>
+              </thead>
+              <tbody id="level-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
-  root.innerHTML = mkts.map((m) => {
-    const title = (m.title || '').replace(/^Bitcoin Up or Down -\s*/i, '').trim();
-    const iv = liveMarketIv(m);
-    const badge = iv ? `<span class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">${iv}m</span>` : '';
-    const sr = Number(m.seconds_left);
-    const ended = !Number.isFinite(sr) || sr <= 0;
-    const sec = ended ? 0 : sr;
-    const mm = Math.floor(sec / 60);
-    const ss = String(sec % 60).padStart(2, '0');
-    const timer = ended ? '<span class="text-slate-500">ended</span>'
-      : '<span class="text-emerald-400 font-mono">' + mm + ':' + ss + '</span>';
-    const ptb = m.price_to_beat != null ? fmtLiveUsd(m.price_to_beat) : '—';
-    const ptbSrc = m.ptb_source ? ' (' + m.ptb_source.replace('chainlink_pre','chainlink~') + ')' : '';
-    const mid = m.up_mid != null ? '<span class="text-white font-medium">' + (m.up_mid * 100).toFixed(1) + '%</span> mid' : '';
-    const up = m.up || {};
-    const dn = m.down || {};
-    const bids = (m.book_bids || []).slice(0, 5);
-    const asks = (m.book_asks || []).slice(0, 5);
-    const rows = Math.max(bids.length, asks.length, 1);
-    let bookHtml = '<table class="w-full text-xs mt-2 opacity-90"><thead><tr><th class="text-left text-emerald-500 py-1">UP bids</th><th class="text-left text-red-400 py-1">UP asks</th></tr></thead><tbody>';
-    for (let i = 0; i < rows; i++) {
-      const b = bids[i];
-      const a = asks[i];
-      bookHtml += '<tr><td class="font-mono text-slate-300 py-0.5">' + (b ? (b.price * 100).toFixed(1) + '% × ' + fmtSz(b.size) : '') + '</td>';
-      bookHtml += '<td class="font-mono text-slate-300 py-0.5">' + (a ? (a.price * 100).toFixed(1) + '% × ' + fmtSz(a.size) : '') + '</td></tr>';
-    }
-    bookHtml += '</tbody></table>';
-    return `
+      <!-- ── Trade log ────────────────────────────────────────────────── -->
+      <div class="card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-slate-300">
+            Trade Log
+            <span
+              id="trade-count"
+              class="text-slate-500 font-normal ml-1"
+            ></span>
+          </h2>
+          <div class="flex gap-2 text-xs">
+            <button
+              onclick="filterTrades('all')"
+              id="f-all"
+              class="px-2 py-1 rounded bg-indigo-600 text-white"
+            >
+              All
+            </button>
+            <button
+              onclick="filterTrades('WIN')"
+              id="f-win"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              Wins
+            </button>
+            <button
+              onclick="filterTrades('LOSS')"
+              id="f-loss"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              Losses
+            </button>
+            <button
+              onclick="filterTrades('UP')"
+              id="f-up"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              UP
+            </button>
+            <button
+              onclick="filterTrades('DOWN')"
+              id="f-down"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              DOWN
+            </button>
+            <button
+              onclick="filterTrades('L1')"
+              id="f-l1"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              L1
+            </button>
+            <button
+              onclick="filterTrades('L2')"
+              id="f-l2"
+              class="px-2 py-1 rounded bg-slate-700 text-slate-300"
+            >
+              L2
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+          <table>
+            <thead
+              style="position: sticky; top: 0; background: #1a1d27; z-index: 10"
+            >
+              <tr>
+                <th onclick="sortBy('timestamp')">Time ↕</th>
+                <th onclick="sortBy('ticker')">Market</th>
+                <th onclick="sortBy('target_price')">PTB $</th>
+                <th onclick="sortBy('btc_price')">BTC $</th>
+                <th onclick="sortBy('deviation')">Dev %</th>
+                <th onclick="sortBy('trigger')">Trigger</th>
+                <th onclick="sortBy('direction')">UP/DN</th>
+                <th onclick="sortBy('limit_price')">Limit</th>
+                <th onclick="sortBy('entry_price')">Entry</th>
+                <th onclick="sortBy('pnl')">P&amp;L $</th>
+                <th onclick="sortBy('outcome')">Result</th>
+              </tr>
+            </thead>
+            <tbody id="trade-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── State ──────────────────────────────────────────────────────────────────
+      let allTrades = [];
+      let currentFilter = "all";
+      let sortCol = "timestamp";
+      let sortAsc = false;
+      let pnlChart = null;
+      let winlossChart = null;
+
+      // ── Status polling ─────────────────────────────────────────────────────────
+      function updateStatus() {
+        fetch("/api/status")
+          .then((r) => r.json())
+          .then((d) => {
+            const fetch = d.btc_fetch;
+            const dot = document.getElementById("status-dot");
+            const txt = document.getElementById("status-text");
+            const panel = document.getElementById("fetch-panel");
+
+            if (fetch.status === "done") {
+              dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+              txt.textContent = "BTC data ready · Market data loaded";
+              panel.classList.add("hidden");
+            } else if (fetch.status === "running") {
+              dot.className =
+                "w-2 h-2 rounded-full bg-yellow-400 animate-pulse";
+              txt.textContent = `Fetching BTC price history… ${fetch.pct}%`;
+              panel.classList.remove("hidden");
+              document.getElementById("progress-bar").style.width =
+                fetch.pct + "%";
+              document.getElementById("fetch-pct").textContent =
+                fetch.pct + "%";
+            } else if (fetch.status === "error") {
+              dot.className = "w-2 h-2 rounded-full bg-red-400";
+              txt.textContent = "BTC fetch error";
+              showError(
+                "BTC data fetch failed: " + (fetch.error || "unknown error"),
+              );
+            } else {
+              dot.className = "w-2 h-2 rounded-full bg-slate-500";
+              txt.textContent = "Checking…";
+            }
+          });
+      }
+
+      // Poll status every 2s
+      setInterval(updateStatus, 2000);
+      updateStatus();
+
+      // ── Live Polymarket panel (poly_live_ticker feeds via /api/poly_live) ──────
+      let lastLiveData = null;
+
+      function liveMarketIv(m) {
+        const v = m.interval_minutes;
+        return v === 5 || v === 15 ? v : null;
+      }
+
+      function fmtLiveUsd(n) {
+        if (n == null || n === "") return "—";
+        return (
+          "$" +
+          Number(n).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        );
+      }
+      function fmtLiveProb(s) {
+        if (s === null || s === undefined || s === "") return "—";
+        const x = parseFloat(s);
+        if (Number.isNaN(x)) return String(s);
+        return (x * 100).toFixed(1) + "%";
+      }
+      function renderLivePanel(data) {
+        lastLiveData = data;
+        const st = document.getElementById("live-status");
+        if (data.error) {
+          st.textContent = "Error · " + data.error;
+          st.className = "text-xs text-red-400 font-mono";
+          return;
+        }
+        st.textContent =
+          "Streaming · msgs " + (data.msg_count ?? 0).toLocaleString();
+        st.className = "text-xs text-slate-500 font-mono";
+
+        document.getElementById("live-btc").textContent =
+          data.btc_usd != null ? fmtLiveUsd(data.btc_usd) : "fetching…";
+        const ageEl = document.getElementById("live-btc-age");
+        if (data.btc_age_seconds != null && data.btc_usd != null)
+          ageEl.textContent = "(" + data.btc_age_seconds + "s ago)";
+        else ageEl.textContent = "";
+
+        document.getElementById("live-note").textContent = data.feed_note || "";
+
+        const root = document.getElementById("live-markets");
+        const mkts = data.markets || [];
+        if (!mkts.length) {
+          root.innerHTML =
+            '<p class="text-slate-500 text-sm">Discovering active windows…</p>';
+          return;
+        }
+
+        root.innerHTML = mkts
+          .map((m) => {
+            const title = (m.title || "")
+              .replace(/^Bitcoin Up or Down -\s*/i, "")
+              .trim();
+            const iv = liveMarketIv(m);
+            const badge = iv
+              ? `<span class="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">${iv}m</span>`
+              : "";
+            const sr = Number(m.seconds_left);
+            const ended = !Number.isFinite(sr) || sr <= 0;
+            const sec = ended ? 0 : sr;
+            const mm = Math.floor(sec / 60);
+            const ss = String(sec % 60).padStart(2, "0");
+            const timer = ended
+              ? '<span class="text-slate-500">ended</span>'
+              : '<span class="text-emerald-400 font-mono">' +
+                mm +
+                ":" +
+                ss +
+                "</span>";
+            const ptb =
+              m.price_to_beat != null ? fmtLiveUsd(m.price_to_beat) : "—";
+            const ptbSrc = m.ptb_source
+              ? " (" + m.ptb_source.replace("chainlink_pre", "chainlink~") + ")"
+              : "";
+            const mid =
+              m.up_mid != null
+                ? '<span class="text-white font-medium">' +
+                  (m.up_mid * 100).toFixed(1) +
+                  "%</span> mid"
+                : "";
+            const up = m.up || {};
+            const dn = m.down || {};
+            const bids = (m.book_bids || []).slice(0, 5);
+            const asks = (m.book_asks || []).slice(0, 5);
+            const rows = Math.max(bids.length, asks.length, 1);
+            let bookHtml =
+              '<table class="w-full text-xs mt-2 opacity-90"><thead><tr><th class="text-left text-emerald-500 py-1">UP bids</th><th class="text-left text-red-400 py-1">UP asks</th></tr></thead><tbody>';
+            for (let i = 0; i < rows; i++) {
+              const b = bids[i];
+              const a = asks[i];
+              bookHtml +=
+                '<tr><td class="font-mono text-slate-300 py-0.5">' +
+                (b ? (b.price * 100).toFixed(1) + "% × " + fmtSz(b.size) : "") +
+                "</td>";
+              bookHtml +=
+                '<td class="font-mono text-slate-300 py-0.5">' +
+                (a ? (a.price * 100).toFixed(1) + "% × " + fmtSz(a.size) : "") +
+                "</td></tr>";
+            }
+            bookHtml += "</tbody></table>";
+            return `
       <div class="rounded-lg border border-slate-700/80 bg-[#14161f] p-3">
         <div class="flex flex-wrap justify-between gap-2 mb-2">
           <span class="text-white font-medium text-sm">${title}${badge}</span>
@@ -393,7 +765,7 @@ function renderLivePanel(data) {
         </div>
         <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mb-1">
           <span>PTB <span class="text-fuchsia-300 font-mono">${ptb}</span>${ptbSrc}</span>
-          ${mid ? '<span>' + mid + '</span>' : ''}
+          ${mid ? "<span>" + mid + "</span>" : ""}
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
           <div><span class="text-slate-500">UP bid</span> <span class="text-emerald-400 font-mono">${fmtLiveProb(up.bid)}</span></div>
@@ -403,261 +775,328 @@ function renderLivePanel(data) {
         </div>
         ${bookHtml}
       </div>`;
-  }).join('');
-}
-function fmtSz(s) {
-  if (s >= 1000) return (s / 1000).toFixed(1) + 'k';
-  return Number(s).toFixed(0);
-}
-async function pollLivePanel() {
-  try {
-    const r = await fetch('/api/poly_live?depth=5');
-    const data = await r.json();
-    if (!r.ok && !data.markets) {
-      renderLivePanel({ error: data.error || 'HTTP ' + r.status });
-      return;
-    }
-    renderLivePanel(data);
-  } catch (e) {
-    renderLivePanel({ error: e.message });
-  }
-}
-setInterval(pollLivePanel, 1500);
-pollLivePanel();
+          })
+          .join("");
+      }
+      function fmtSz(s) {
+        if (s >= 1000) return (s / 1000).toFixed(1) + "k";
+        return Number(s).toFixed(0);
+      }
+      async function pollLivePanel() {
+        try {
+          const r = await fetch("/api/poly_live?depth=5");
+          const data = await r.json();
+          if (!r.ok && !data.markets) {
+            renderLivePanel({ error: data.error || "HTTP " + r.status });
+            return;
+          }
+          renderLivePanel(data);
+        } catch (e) {
+          renderLivePanel({ error: e.message });
+        }
+      }
+      setInterval(pollLivePanel, 1500);
+      pollLivePanel();
 
-// ── Run backtest ───────────────────────────────────────────────────────────
-async function runBacktest() {
-  const btn = document.getElementById('run-btn');
-  btn.disabled = true;
-  btn.textContent = 'Running…';
-  hideError();
-  document.getElementById('loading').classList.remove('hidden');
-  document.getElementById('results').classList.add('hidden');
+      // ── Run backtest ───────────────────────────────────────────────────────────
+      async function runBacktest() {
+        const btn = document.getElementById("run-btn");
+        btn.disabled = true;
+        btn.textContent = "Running…";
+        hideError();
+        document.getElementById("loading").classList.remove("hidden");
+        document.getElementById("results").classList.add("hidden");
 
-  const body = {
-    l1_pct:        parseFloat(document.getElementById('l1-pct').value),
-    l1_limit:      parseFloat(document.getElementById('l1-limit').value) / 100,
-    l2_pct:        parseFloat(document.getElementById('l2-pct').value),
-    l2_limit:      parseFloat(document.getElementById('l2-limit').value) / 100,
-    position_size: parseFloat(document.getElementById('position-size').value),
-    start_date:    document.getElementById('start-date').value || null,
-    end_date:      document.getElementById('end-date').value || null,
-  };
+        const body = {
+          l1_pct: parseFloat(document.getElementById("l1-pct").value),
+          l1_limit: parseFloat(document.getElementById("l1-limit").value) / 100,
+          l2_pct: parseFloat(document.getElementById("l2-pct").value),
+          l2_limit: parseFloat(document.getElementById("l2-limit").value) / 100,
+          position_size: parseFloat(
+            document.getElementById("position-size").value,
+          ),
+          start_date: document.getElementById("start-date").value || null,
+          end_date: document.getElementById("end-date").value || null,
+        };
 
-  try {
-    const resp = await fetch('/api/run', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body),
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      showError(data.error || `HTTP ${resp.status}`);
-      return;
-    }
-    renderResults(data.summary, data.trades);
-  } catch(e) {
-    showError('Request failed: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Run Backtest';
-    document.getElementById('loading').classList.add('hidden');
-  }
-}
+        try {
+          const resp = await fetch("/api/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            showError(data.error || `HTTP ${resp.status}`);
+            return;
+          }
+          renderResults(data.summary, data.trades);
+        } catch (e) {
+          showError("Request failed: " + e.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Run Backtest";
+          document.getElementById("loading").classList.add("hidden");
+        }
+      }
 
-// ── Render results ─────────────────────────────────────────────────────────
-function renderResults(summary, trades) {
-  allTrades = trades;
-  document.getElementById('results').classList.remove('hidden');
+      // ── Render results ─────────────────────────────────────────────────────────
+      function renderResults(summary, trades) {
+        allTrades = trades;
+        document.getElementById("results").classList.remove("hidden");
 
-  // Stats
-  const pnlEl = document.getElementById('s-pnl');
-  pnlEl.textContent = fmt$(summary.total_pnl);
-  pnlEl.className = 'text-2xl font-bold ' + (summary.total_pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+        // Stats
+        const pnlEl = document.getElementById("s-pnl");
+        pnlEl.textContent = fmt$(summary.total_pnl);
+        pnlEl.className =
+          "text-2xl font-bold " +
+          (summary.total_pnl >= 0 ? "text-emerald-400" : "text-red-400");
 
-  const avgEl = document.getElementById('s-avg-pnl');
-  avgEl.textContent = fmt$(summary.avg_pnl);
-  avgEl.className = 'text-xl font-bold ' + (summary.avg_pnl >= 0 ? 'text-emerald-400' : 'text-red-400');
+        const avgEl = document.getElementById("s-avg-pnl");
+        avgEl.textContent = fmt$(summary.avg_pnl);
+        avgEl.className =
+          "text-xl font-bold " +
+          (summary.avg_pnl >= 0 ? "text-emerald-400" : "text-red-400");
 
-  const roiEl = document.getElementById('s-roi');
-  roiEl.textContent = (summary.roi_pct >= 0 ? '+' : '') + summary.roi_pct.toFixed(1) + '%';
-  roiEl.className = 'text-2xl font-bold ' + (summary.roi_pct >= 0 ? 'text-emerald-400' : 'text-red-400');
+        const roiEl = document.getElementById("s-roi");
+        roiEl.textContent =
+          (summary.roi_pct >= 0 ? "+" : "") + summary.roi_pct.toFixed(1) + "%";
+        roiEl.className =
+          "text-2xl font-bold " +
+          (summary.roi_pct >= 0 ? "text-emerald-400" : "text-red-400");
 
-  document.getElementById('s-total').textContent   = summary.total_trades.toLocaleString();
-  document.getElementById('s-wins').textContent     = summary.wins.toLocaleString();
-  document.getElementById('s-losses').textContent   = summary.losses.toLocaleString();
-  document.getElementById('s-winrate').textContent  = summary.win_rate.toFixed(1) + '%';
-  document.getElementById('s-risked').textContent   = fmt$(summary.total_risked);
+        document.getElementById("s-total").textContent =
+          summary.total_trades.toLocaleString();
+        document.getElementById("s-wins").textContent =
+          summary.wins.toLocaleString();
+        document.getElementById("s-losses").textContent =
+          summary.losses.toLocaleString();
+        document.getElementById("s-winrate").textContent =
+          summary.win_rate.toFixed(1) + "%";
+        document.getElementById("s-risked").textContent = fmt$(
+          summary.total_risked,
+        );
 
-  // Charts
-  renderPnlChart(summary.cum_pnl_series);
-  renderWinLossChart(summary.wins, summary.losses);
+        // Charts
+        renderPnlChart(summary.cum_pnl_series);
+        renderWinLossChart(summary.wins, summary.losses);
 
-  // Level breakdown table
-  const tbody = document.getElementById('level-table');
-  tbody.innerHTML = summary.by_level.map(row => `
+        // Level breakdown table
+        const tbody = document.getElementById("level-table");
+        tbody.innerHTML = summary.by_level
+          .map(
+            (row) => `
     <tr>
-      <td><span class="${row.trigger.startsWith('L1') ? 'tag-l1' : 'tag-l2'}">${row.trigger}</span></td>
+      <td><span class="${row.trigger.startsWith("L1") ? "tag-l1" : "tag-l2"}">${row.trigger}</span></td>
       <td class="text-slate-300">${row.trades}</td>
       <td class="text-slate-300">${row.wins}</td>
-      <td class="${row.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${fmt$(row.pnl)}</td>
+      <td class="${row.pnl >= 0 ? "pnl-pos" : "pnl-neg"}">${fmt$(row.pnl)}</td>
     </tr>
-  `).join('');
+  `,
+          )
+          .join("");
 
-  // Trade table
-  filterTrades(currentFilter);
-}
-
-// ── Charts ─────────────────────────────────────────────────────────────────
-function renderPnlChart(series) {
-  if (pnlChart) pnlChart.destroy();
-  const ctx = document.getElementById('pnl-chart').getContext('2d');
-  const labels = series.map(r => r.d);
-  const values = series.map(r => r.cum_pnl);
-  const positive = values[values.length - 1] >= 0;
-
-  pnlChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        borderColor: positive ? '#34d399' : '#f87171',
-        backgroundColor: positive ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)',
-        fill: true,
-        pointRadius: series.length > 60 ? 0 : 3,
-        borderWidth: 2,
-        tension: 0.3,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ' $' + ctx.parsed.y.toFixed(2)
-          }
-        }
-      },
-      scales: {
-        x: { grid: { color: '#1e2235' }, ticks: { color: '#64748b', maxTicksLimit: 8, maxRotation: 0 } },
-        y: {
-          grid: { color: '#1e2235' },
-          ticks: { color: '#64748b', callback: v => '$' + v.toFixed(0) },
-          border: { dash: [3,3] }
-        }
+        // Trade table
+        filterTrades(currentFilter);
       }
-    }
-  });
-}
 
-function renderWinLossChart(wins, losses) {
-  if (winlossChart) winlossChart.destroy();
-  const ctx = document.getElementById('winloss-chart').getContext('2d');
-  winlossChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Wins', 'Losses'],
-      datasets: [{
-        data: [wins, losses],
-        backgroundColor: ['#34d399', '#f87171'],
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: { position: 'right', labels: { color: '#94a3b8', font: {size:11} } },
-        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}` } }
+      // ── Charts ─────────────────────────────────────────────────────────────────
+      function renderPnlChart(series) {
+        if (pnlChart) pnlChart.destroy();
+        const ctx = document.getElementById("pnl-chart").getContext("2d");
+        const labels = series.map((r) => r.d);
+        const values = series.map((r) => r.cum_pnl);
+        const positive = values[values.length - 1] >= 0;
+
+        pnlChart = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                data: values,
+                borderColor: positive ? "#34d399" : "#f87171",
+                backgroundColor: positive
+                  ? "rgba(52,211,153,0.08)"
+                  : "rgba(248,113,113,0.08)",
+                fill: true,
+                pointRadius: series.length > 60 ? 0 : 3,
+                borderWidth: 2,
+                tension: 0.3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => " $" + ctx.parsed.y.toFixed(2),
+                },
+              },
+            },
+            scales: {
+              x: {
+                grid: { color: "#1e2235" },
+                ticks: { color: "#64748b", maxTicksLimit: 8, maxRotation: 0 },
+              },
+              y: {
+                grid: { color: "#1e2235" },
+                ticks: {
+                  color: "#64748b",
+                  callback: (v) => "$" + v.toFixed(0),
+                },
+                border: { dash: [3, 3] },
+              },
+            },
+          },
+        });
       }
-    }
-  });
-}
 
-// ── Trade table ─────────────────────────────────────────────────────────────
-function filterTrades(filter) {
-  currentFilter = filter;
-  ['all','WIN','LOSS','UP','DOWN','L1','L2'].forEach(f => {
-    const id = 'f-' + f.toLowerCase();
-    const el = document.getElementById(id);
-    if (el) el.className = 'px-2 py-1 rounded ' + (f === filter ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-300');
-  });
+      function renderWinLossChart(wins, losses) {
+        if (winlossChart) winlossChart.destroy();
+        const ctx = document.getElementById("winloss-chart").getContext("2d");
+        winlossChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Wins", "Losses"],
+            datasets: [
+              {
+                data: [wins, losses],
+                backgroundColor: ["#34d399", "#f87171"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "65%",
+            plugins: {
+              legend: {
+                position: "right",
+                labels: { color: "#94a3b8", font: { size: 11 } },
+              },
+              tooltip: {
+                callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.parsed}` },
+              },
+            },
+          },
+        });
+      }
 
-  let filtered = allTrades;
-  if (filter === 'WIN')   filtered = allTrades.filter(t => t.outcome === 'WIN');
-  if (filter === 'LOSS')  filtered = allTrades.filter(t => t.outcome === 'LOSS');
-  if (filter === 'UP')    filtered = allTrades.filter(t => t.direction === 'UP');
-  if (filter === 'DOWN')  filtered = allTrades.filter(t => t.direction === 'DOWN');
-  if (filter === 'L1')    filtered = allTrades.filter(t => t.trigger.startsWith('L1'));
-  if (filter === 'L2')    filtered = allTrades.filter(t => t.trigger.startsWith('L2'));
+      // ── Trade table ─────────────────────────────────────────────────────────────
+      function filterTrades(filter) {
+        currentFilter = filter;
+        ["all", "WIN", "LOSS", "UP", "DOWN", "L1", "L2"].forEach((f) => {
+          const id = "f-" + f.toLowerCase();
+          const el = document.getElementById(id);
+          if (el)
+            el.className =
+              "px-2 py-1 rounded " +
+              (f === filter
+                ? "bg-indigo-600 text-white"
+                : "bg-slate-700 text-slate-300");
+        });
 
-  // Sort
-  filtered = [...filtered].sort((a, b) => {
-    let av = a[sortCol], bv = b[sortCol];
-    if (typeof av === 'string') return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-    return sortAsc ? av - bv : bv - av;
-  });
+        let filtered = allTrades;
+        if (filter === "WIN")
+          filtered = allTrades.filter((t) => t.outcome === "WIN");
+        if (filter === "LOSS")
+          filtered = allTrades.filter((t) => t.outcome === "LOSS");
+        if (filter === "UP")
+          filtered = allTrades.filter((t) => t.direction === "UP");
+        if (filter === "DOWN")
+          filtered = allTrades.filter((t) => t.direction === "DOWN");
+        if (filter === "L1")
+          filtered = allTrades.filter((t) => t.trigger.startsWith("L1"));
+        if (filter === "L2")
+          filtered = allTrades.filter((t) => t.trigger.startsWith("L2"));
 
-  const tbody = document.getElementById('trade-table');
-  document.getElementById('trade-count').textContent = `(${filtered.length.toLocaleString()})`;
+        // Sort
+        filtered = [...filtered].sort((a, b) => {
+          let av = a[sortCol],
+            bv = b[sortCol];
+          if (typeof av === "string")
+            return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+          return sortAsc ? av - bv : bv - av;
+        });
 
-  tbody.innerHTML = filtered.map(t => {
-    const ts = t.timestamp.replace('T', ' ').slice(0, 16) + ' UTC';
-    const short = t.ticker.replace('KXBTC15M-', '').replace('-', ' ·$');
-    const isL2 = t.trigger.startsWith('L2');
-    return `
+        const tbody = document.getElementById("trade-table");
+        document.getElementById("trade-count").textContent =
+          `(${filtered.length.toLocaleString()})`;
+
+        tbody.innerHTML = filtered
+          .map((t) => {
+            const ts = t.timestamp.replace("T", " ").slice(0, 16) + " UTC";
+            const short = t.ticker.replace("KXBTC15M-", "").replace("-", " ·$");
+            const isL2 = t.trigger.startsWith("L2");
+            return `
       <tr>
         <td class="text-slate-400 font-mono text-xs whitespace-nowrap">${ts}</td>
         <td class="text-slate-300 text-xs">${short}</td>
         <td class="text-slate-300 font-mono">${fmt$(t.target_price)}</td>
         <td class="text-slate-300 font-mono">${fmt$(t.btc_price)}</td>
-        <td class="${t.deviation >= 0 ? 'text-emerald-400' : 'text-red-400'} font-mono">
-          ${t.deviation >= 0 ? '+' : ''}${t.deviation.toFixed(3)}%
+        <td class="${t.deviation >= 0 ? "text-emerald-400" : "text-red-400"} font-mono">
+          ${t.deviation >= 0 ? "+" : ""}${t.deviation.toFixed(3)}%
         </td>
-        <td><span class="${isL2 ? 'tag-l2' : 'tag-l1'}">${t.trigger}</span></td>
-        <td><span class="${t.direction === 'UP' ? 'tag-up' : 'tag-down'}">${t.direction}</span></td>
+        <td><span class="${isL2 ? "tag-l2" : "tag-l1"}">${t.trigger}</span></td>
+        <td><span class="${t.direction === "UP" ? "tag-up" : "tag-down"}">${t.direction}</span></td>
         <td class="font-mono text-slate-500">${(t.limit_price * 100).toFixed(0)}¢</td>
         <td class="font-mono text-slate-300">${(t.entry_price * 100).toFixed(1)}¢</td>
-        <td class="${t.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'} font-mono">${t.pnl >= 0 ? '+' : ''}$${t.pnl.toFixed(2)}</td>
-        <td><span class="${t.outcome === 'WIN' ? 'tag-win' : 'tag-loss'}">${t.outcome}</span></td>
+        <td class="${t.pnl >= 0 ? "pnl-pos" : "pnl-neg"} font-mono">${t.pnl >= 0 ? "+" : ""}$${t.pnl.toFixed(2)}</td>
+        <td><span class="${t.outcome === "WIN" ? "tag-win" : "tag-loss"}">${t.outcome}</span></td>
       </tr>
     `;
-  }).join('');
-}
+          })
+          .join("");
+      }
 
-function sortBy(col) {
-  if (sortCol === col) sortAsc = !sortAsc;
-  else { sortCol = col; sortAsc = false; }
-  filterTrades(currentFilter);
-}
+      function sortBy(col) {
+        if (sortCol === col) sortAsc = !sortAsc;
+        else {
+          sortCol = col;
+          sortAsc = false;
+        }
+        filterTrades(currentFilter);
+      }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-function fmt$(v) {
-  const abs = Math.abs(v);
-  const sign = v < 0 ? '-' : '+';
-  if (abs >= 1000) return (v < 0 ? '-' : '+') + '$' + abs.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
-  return (v < 0 ? '-' : '+') + '$' + abs.toFixed(2);
-}
-function showError(msg) {
-  const el = document.getElementById('error-banner');
-  el.textContent = '⚠ ' + msg;
-  el.classList.remove('hidden');
-}
-function hideError() {
-  document.getElementById('error-banner').classList.add('hidden');
-}
+      // ── Helpers ────────────────────────────────────────────────────────────────
+      function fmt$(v) {
+        const abs = Math.abs(v);
+        const sign = v < 0 ? "-" : "+";
+        if (abs >= 1000)
+          return (
+            (v < 0 ? "-" : "+") +
+            "$" +
+            abs.toLocaleString("en-US", {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })
+          );
+        return (v < 0 ? "-" : "+") + "$" + abs.toFixed(2);
+      }
+      function showError(msg) {
+        const el = document.getElementById("error-banner");
+        el.textContent = "⚠ " + msg;
+        el.classList.remove("hidden");
+      }
+      function hideError() {
+        document.getElementById("error-banner").classList.add("hidden");
+      }
 
-// Auto-run once BTC data is ready and we first load
-let autoRan = false;
-setInterval(async () => {
-  if (autoRan) return;
-  const d = await fetch('/api/status').then(r => r.json());
-  if (d.btc_fetch.status === 'done') {
-    autoRan = true;
-    runBacktest();
-  }
-}, 3000);
-</script>
-</body>
+      // Auto-run once BTC data is ready and we first load
+      let autoRan = false;
+      setInterval(async () => {
+        if (autoRan) return;
+        const d = await fetch("/api/status").then((r) => r.json());
+        if (d.btc_fetch.status === "done") {
+          autoRan = true;
+          runBacktest();
+        }
+      }, 3000);
+    </script>
+  </body>
 </html>

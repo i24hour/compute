@@ -1,0 +1,139 @@
+<nav
+  style="
+    background: #0a0d17;
+    border-bottom: 1px solid #1e2740;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  "
+>
+  <!-- left logo / brand -->
+  <div style="display: flex; align-items: center; gap: 10px">
+    <span
+      style="
+        color: #6366f1;
+        font-weight: 800;
+        font-size: 1rem;
+        letter-spacing: -0.02em;
+      "
+      >▲▼ PriyanshCompute
+    </span>
+    <span
+      style="
+        background: #1e2740;
+        color: #64748b;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+      "
+      >BETA
+    </span>
+  </div>
+
+  <!-- Center: page links -->
+  <div style="display: flex; align-items: center; gap: 4px">
+    <a
+      href="/"
+      class="nav-link {% if request.path == '/' %}nav-active{% endif %}"
+      >Backtest</a
+    >
+    <a
+      href="/live"
+      class="nav-link {% if request.path == '/live' %}nav-active{% endif %}"
+      >Live</a
+    >
+    <a
+      href="/livetest"
+      class="nav-link {% if request.path == '/livetest' %}nav-active{% endif %}"
+      >Paper Trader</a
+    >
+    <a
+      href="/candles"
+      class="nav-link {% if request.path == '/candles' %}nav-active{% endif %}"
+      >Candles</a
+    >
+    <a
+      href="/candle3"
+      class="nav-link {% if request.path == '/candle3' %}nav-active{% endif %}"
+      >Signals</a
+    >
+    <a
+      href="/algo"
+      class="nav-link {% if request.path == '/algo' %}nav-active{% endif %}"
+      >Algo</a
+    >
+    <a
+      href="/agent"
+      class="nav-link {% if request.path == '/agent' %}nav-active{% endif %}"
+      style="color: #a78bfa"
+      >Agent</a
+    >
+  </div>
+
+  <!-- Right live BTC price pill (featched by every page anyway) -->
+  <div style="display: flex; align-items: center; gap: 8px">
+    <span style="color: #647486; font-size: 11px">BTC </span>
+    <span
+      id="nav-btc-price"
+      style="
+        color: #fcd34d;
+        font-family: ui-monospace, monospace;
+        font-size: 13px;
+        font-weight: 700;
+      "
+      >-</span
+    >
+  </div>
+</nav>
+
+<style>
+  .nav-link {
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition:
+      background 0.15s,
+      color 0.15s;
+  }
+  .nav-link:hover {
+    background: #1e2740;
+    color: #e2e8f0;
+  }
+  .nav-active {
+    background: #1e2740;
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+</style>
+
+<script>
+  /* Update BTC price in nav bar - runs on every page */
+  (function navBtcTick() {
+    fetch("/api/poly_live?depth=1")
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (d) {
+        if (d.btc_usd != null) {
+          var el = document.getElementById("nav-btc-price");
+          if (el)
+            el.textContent =
+              "$" +
+              Number(d.btc_usd).toLocaleString("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              });
+        }
+      })
+      .catch(function () {});
+    setTimeout(navBtcTick, 3000);
+  })();
+</script>

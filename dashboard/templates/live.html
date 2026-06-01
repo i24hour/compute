@@ -1,164 +1,320 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta http-equiv="Cache-Control" content="no-store"/>
-  <title>Live · Polymarket BTC 5m / 15m</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #0b1220; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px; }
-    .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .top a { color: #93c5fd; font-weight: 600; }
-    .hero {
-      background: linear-gradient(135deg, #064e3b 0%, #1e293b 100%);
-      border: 2px solid #34d399;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .hero h1 { margin: 0 0 8px 0; font-size: 1.35rem; color: #ecfdf5; }
-    .btc { font-size: 2rem; font-weight: 700; color: #fcd34d; font-variant-numeric: tabular-nums; }
-    .muted { color: #94a3b8; font-size: 0.85rem; }
-    .status { font-family: ui-monospace, monospace; font-size: 12px; color: #cbd5e1; }
-    .err { background: #450a0a; color: #fecaca; padding: 12px; border-radius: 8px; margin: 12px 0; }
-    .card {
-      background: #151b2e;
-      border: 1px solid #334155;
-      border-radius: 10px;
-      padding: 14px;
-      margin-bottom: 14px;
-    }
-    .card h3 { margin: 0 0 10px 0; font-size: 1rem; color: #fff; }
-    table.book { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
-    table.book th { text-align: left; color: #64748b; padding: 4px 0; border-bottom: 1px solid #1e293b; }
-    table.book td { padding: 4px 8px 4px 0; font-family: ui-monospace, monospace; color: #cbd5e1; }
-    .grid4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; font-size: 12px; margin-top: 8px; }
-    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #1e293b; font-size: 11px; color: #94a3b8; }
-    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; background: #1e293b; font-size: 11px; color: #94a3b8; }
-  </style>
-</head>
-<body>
-  <div class="top">
-    <span class="pill">Standalone live page · hard to cache-strip</span>
-    <div>
-      <a href="/candles">Chainlink 1m →</a> &nbsp;
-      <a href="/livetest">Live strategy test →</a> &nbsp;
-      <a href="/">← Back to backtest dashboard</a>
-    </div>
-  </div>
-
-  <div class="hero">
-    <h1>● LIVE — Polymarket BTC Up/Down · 5m &amp; 15m</h1>
-    <p class="muted" style="margin:0 0 12px 0;">Data from <code>/api/poly_live</code> · WebSockets server-side · refresh ~1.5s</p>
-    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;">
-      <span class="muted">BTC spot (RTDS)</span>
-      <span id="live-btc" class="btc">—</span>
-      <span id="live-btc-age" class="muted"></span>
-    </div>
-    <p id="live-status" class="status" style="margin-top:14px;margin-bottom:0;">Connecting…</p>
-    <p id="live-note" class="muted" style="margin-top:8px;margin-bottom:0;"></p>
-  </div>
-
-  <div id="live-markets"></div>
-
-<script>
-(function () {
-  function marketInterval(m) {
-    var v = m.interval_minutes;
-    if (v === 5 || v === 15) return v;
-    return null;
-  }
-  function fmtUsd(n) {
-    if (n == null || n === '') return '—';
-    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  function fmtProb(s) {
-    if (s === null || s === undefined || s === '') return '—';
-    var x = parseFloat(s);
-    if (isNaN(x)) return String(s);
-    return (x * 100).toFixed(1) + '%';
-  }
-  function fmtSz(s) {
-    if (s >= 1000) return (s / 1000).toFixed(1) + 'k';
-    return Number(s).toFixed(0);
-  }
-  function render(data) {
-    var st = document.getElementById('live-status');
-    var note = document.getElementById('live-note');
-    if (data.error) {
-      st.innerHTML = '<span style="color:#fecaca;">Error · ' + escapeHtml(data.error) + '</span>';
-      note.textContent = 'Install aiohttp + websockets in the same venv as app.py (see dashboard/requirements.txt).';
-      document.getElementById('live-markets').innerHTML = '';
-      return;
-    }
-    st.textContent = 'Streaming · msgs ' + (data.msg_count || 0).toLocaleString();
-    note.textContent = data.feed_note || '';
-
-    document.getElementById('live-btc').textContent =
-      data.btc_usd != null ? fmtUsd(data.btc_usd) : 'fetching…';
-    var ageEl = document.getElementById('live-btc-age');
-    if (data.btc_age_seconds != null && data.btc_usd != null)
-      ageEl.textContent = '(' + data.btc_age_seconds + 's ago)';
-    else ageEl.textContent = '';
-
-    var root = document.getElementById('live-markets');
-    var mkts = data.markets || [];
-    if (!mkts.length) {
-      root.innerHTML = '<div class="card"><p class="muted">Discovering active windows…</p></div>';
-      return;
-    }
-    root.innerHTML = mkts.map(function (m) {
-      var title = (m.title || '').replace(/^Bitcoin Up or Down -\s*/i, '').trim();
-      var iv = marketInterval(m);
-      var sr = Number(m.seconds_left);
-      var ended = !isFinite(sr) || sr <= 0;
-      var sec = ended ? 0 : sr;
-      var mm = Math.floor(sec / 60);
-      var ss = String(sec % 60).padStart(2, '0');
-      var timer = ended ? '<span class="muted">ended</span>' : '<span style="color:#34d399;font-weight:600;">' + mm + ':' + ss + '</span>';
-      var ptb = m.price_to_beat != null ? fmtUsd(m.price_to_beat) : '—';
-      var ptbSrc = m.ptb_source ? (' (' + m.ptb_source.replace('chainlink_pre','chainlink~') + ')') : '';
-      var mid = m.up_mid != null ? (m.up_mid * 100).toFixed(1) + '% mid' : '';
-      var up = m.up || {};
-      var dn = m.down || {};
-      var bids = (m.book_bids || []).slice(0, 5);
-      var asks = (m.book_asks || []).slice(0, 5);
-      var rows = Math.max(bids.length, asks.length, 1);
-      var bookHtml = '<table class="book"><thead><tr><th>UP bids</th><th>UP asks</th></tr></thead><tbody>';
-      for (var i = 0; i < rows; i++) {
-        var b = bids[i], a = asks[i];
-        bookHtml += '<tr><td>' + (b ? (b.price * 100).toFixed(1) + '% × ' + fmtSz(b.size) : '') + '</td>';
-        bookHtml += '<td>' + (a ? (a.price * 100).toFixed(1) + '% × ' + fmtSz(a.size) : '') + '</td></tr>';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Live · Polymarket BTC 5m / 15m</title>
+    <style>
+      * {
+        box-sizing: border-box;
       }
-      bookHtml += '</tbody></table>';
-      var badge = iv ? (' <span class="badge">' + iv + 'm</span>') : '';
-      return '<div class="card"><h3>' + escapeHtml(title) + badge + '</h3>' +
-        '<div class="muted">Expires ' + timer + ' · PTB <strong style="color:#e879f9;">' + ptb + '</strong>' + ptbSrc + (mid ? ' · ' + mid : '') + '</div>' +
-        '<div class="grid4">' +
-        '<div><span class="muted">UP bid</span><br><strong style="color:#4ade80;">' + fmtProb(up.bid) + '</strong></div>' +
-        '<div><span class="muted">UP ask</span><br><strong style="color:#fca5a5;">' + fmtProb(up.ask) + '</strong></div>' +
-        '<div><span class="muted">DOWN bid</span><br><strong style="color:#4ade80;">' + fmtProb(dn.bid) + '</strong></div>' +
-        '<div><span class="muted">DOWN ask</span><br><strong style="color:#fca5a5;">' + fmtProb(dn.ask) + '</strong></div>' +
-        '</div>' + bookHtml + '</div>';
-    }).join('');
-  }
-  function escapeHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  async function poll() {
-    try {
-      var r = await fetch('/api/poly_live?depth=5');
-      var data = await r.json();
-      if (!r.ok && !data.markets) throw new Error(data.error || ('HTTP ' + r.status));
-      render(data);
-    } catch (e) {
-      render({ error: e.message });
-    }
-  }
-  setInterval(poll, 1500);
-  poll();
-})();
-</script>
-</body>
+      body {
+        margin: 0;
+        background: #0b1220;
+        color: #e2e8f0;
+        font-family: system-ui, sans-serif;
+        padding: 16px;
+      }
+      .top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .top a {
+        color: #93c5fd;
+        font-weight: 600;
+      }
+      .hero {
+        background: linear-gradient(135deg, #064e3b 0%, #1e293b 100%);
+        border: 2px solid #34d399;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+      .hero h1 {
+        margin: 0 0 8px 0;
+        font-size: 1.35rem;
+        color: #ecfdf5;
+      }
+      .btc {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fcd34d;
+        font-variant-numeric: tabular-nums;
+      }
+      .muted {
+        color: #94a3b8;
+        font-size: 0.85rem;
+      }
+      .status {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        color: #cbd5e1;
+      }
+      .err {
+        background: #450a0a;
+        color: #fecaca;
+        padding: 12px;
+        border-radius: 8px;
+        margin: 12px 0;
+      }
+      .card {
+        background: #151b2e;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+      .card h3 {
+        margin: 0 0 10px 0;
+        font-size: 1rem;
+        color: #fff;
+      }
+      table.book {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      table.book th {
+        text-align: left;
+        color: #64748b;
+        padding: 4px 0;
+        border-bottom: 1px solid #1e293b;
+      }
+      table.book td {
+        padding: 4px 8px 4px 0;
+        font-family: ui-monospace, monospace;
+        color: #cbd5e1;
+      }
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #1e293b;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #1e293b;
+        font-size: 11px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    {% include "nav.html" %}
+
+    <div class="hero">
+      <h1>● LIVE — Polymarket BTC Up/Down · 5m &amp; 15m</h1>
+      <p class="muted" style="margin: 0 0 12px 0">
+        Data from <code>/api/poly_live</code> · WebSockets server-side · refresh
+        ~1.5s
+      </p>
+      <div
+        style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px"
+      >
+        <span class="muted">BTC spot (RTDS)</span>
+        <span id="live-btc" class="btc">—</span>
+        <span id="live-btc-age" class="muted"></span>
+      </div>
+      <p
+        id="live-status"
+        class="status"
+        style="margin-top: 14px; margin-bottom: 0"
+      >
+        Connecting…
+      </p>
+      <p
+        id="live-note"
+        class="muted"
+        style="margin-top: 8px; margin-bottom: 0"
+      ></p>
+    </div>
+
+    <div id="live-markets"></div>
+
+    <script>
+      (function () {
+        function marketInterval(m) {
+          var v = m.interval_minutes;
+          if (v === 5 || v === 15) return v;
+          return null;
+        }
+        function fmtUsd(n) {
+          if (n == null || n === "") return "—";
+          return (
+            "$" +
+            Number(n).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          );
+        }
+        function fmtProb(s) {
+          if (s === null || s === undefined || s === "") return "—";
+          var x = parseFloat(s);
+          if (isNaN(x)) return String(s);
+          return (x * 100).toFixed(1) + "%";
+        }
+        function fmtSz(s) {
+          if (s >= 1000) return (s / 1000).toFixed(1) + "k";
+          return Number(s).toFixed(0);
+        }
+        function render(data) {
+          var st = document.getElementById("live-status");
+          var note = document.getElementById("live-note");
+          if (data.error) {
+            st.innerHTML =
+              '<span style="color:#fecaca;">Error · ' +
+              escapeHtml(data.error) +
+              "</span>";
+            note.textContent =
+              "Install aiohttp + websockets in the same venv as app.py (see dashboard/requirements.txt).";
+            document.getElementById("live-markets").innerHTML = "";
+            return;
+          }
+          st.textContent =
+            "Streaming · msgs " + (data.msg_count || 0).toLocaleString();
+          note.textContent = data.feed_note || "";
+
+          document.getElementById("live-btc").textContent =
+            data.btc_usd != null ? fmtUsd(data.btc_usd) : "fetching…";
+          var ageEl = document.getElementById("live-btc-age");
+          if (data.btc_age_seconds != null && data.btc_usd != null)
+            ageEl.textContent = "(" + data.btc_age_seconds + "s ago)";
+          else ageEl.textContent = "";
+
+          var root = document.getElementById("live-markets");
+          var mkts = data.markets || [];
+          if (!mkts.length) {
+            root.innerHTML =
+              '<div class="card"><p class="muted">Discovering active windows…</p></div>';
+            return;
+          }
+          root.innerHTML = mkts
+            .map(function (m) {
+              var title = (m.title || "")
+                .replace(/^Bitcoin Up or Down -\s*/i, "")
+                .trim();
+              var iv = marketInterval(m);
+              var sr = Number(m.seconds_left);
+              var ended = !isFinite(sr) || sr <= 0;
+              var sec = ended ? 0 : sr;
+              var mm = Math.floor(sec / 60);
+              var ss = String(sec % 60).padStart(2, "0");
+              var timer = ended
+                ? '<span class="muted">ended</span>'
+                : '<span style="color:#34d399;font-weight:600;">' +
+                  mm +
+                  ":" +
+                  ss +
+                  "</span>";
+              var ptb = m.price_to_beat != null ? fmtUsd(m.price_to_beat) : "—";
+              var ptbSrc = m.ptb_source
+                ? " (" +
+                  m.ptb_source.replace("chainlink_pre", "chainlink~") +
+                  ")"
+                : "";
+              var mid =
+                m.up_mid != null ? (m.up_mid * 100).toFixed(1) + "% mid" : "";
+              var up = m.up || {};
+              var dn = m.down || {};
+              var bids = (m.book_bids || []).slice(0, 5);
+              var asks = (m.book_asks || []).slice(0, 5);
+              var rows = Math.max(bids.length, asks.length, 1);
+              var bookHtml =
+                '<table class="book"><thead><tr><th>UP bids</th><th>UP asks</th></tr></thead><tbody>';
+              for (var i = 0; i < rows; i++) {
+                var b = bids[i],
+                  a = asks[i];
+                bookHtml +=
+                  "<tr><td>" +
+                  (b
+                    ? (b.price * 100).toFixed(1) + "% × " + fmtSz(b.size)
+                    : "") +
+                  "</td>";
+                bookHtml +=
+                  "<td>" +
+                  (a
+                    ? (a.price * 100).toFixed(1) + "% × " + fmtSz(a.size)
+                    : "") +
+                  "</td></tr>";
+              }
+              bookHtml += "</tbody></table>";
+              var badge = iv ? ' <span class="badge">' + iv + "m</span>" : "";
+              return (
+                '<div class="card"><h3>' +
+                escapeHtml(title) +
+                badge +
+                "</h3>" +
+                '<div class="muted">Expires ' +
+                timer +
+                ' · PTB <strong style="color:#e879f9;">' +
+                ptb +
+                "</strong>" +
+                ptbSrc +
+                (mid ? " · " + mid : "") +
+                "</div>" +
+                '<div class="grid4">' +
+                '<div><span class="muted">UP bid</span><br><strong style="color:#4ade80;">' +
+                fmtProb(up.bid) +
+                "</strong></div>" +
+                '<div><span class="muted">UP ask</span><br><strong style="color:#fca5a5;">' +
+                fmtProb(up.ask) +
+                "</strong></div>" +
+                '<div><span class="muted">DOWN bid</span><br><strong style="color:#4ade80;">' +
+                fmtProb(dn.bid) +
+                "</strong></div>" +
+                '<div><span class="muted">DOWN ask</span><br><strong style="color:#fca5a5;">' +
+                fmtProb(dn.ask) +
+                "</strong></div>" +
+                "</div>" +
+                bookHtml +
+                "</div>"
+              );
+            })
+            .join("");
+        }
+        function escapeHtml(s) {
+          return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+        }
+        async function poll() {
+          try {
+            var r = await fetch("/api/poly_live?depth=5");
+            var data = await r.json();
+            if (!r.ok && !data.markets)
+              throw new Error(data.error || "HTTP " + r.status);
+            render(data);
+          } catch (e) {
+            render({ error: e.message });
+          }
+        }
+        setInterval(poll, 1500);
+        poll();
+      })();
+    </script>
+  </body>
 </html>

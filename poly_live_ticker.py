@@ -24,6 +24,7 @@ import argparse
 import asyncio
 import csv
 import json
+import sys
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
@@ -32,6 +33,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
 import websockets
+
+# Force UTF-8 stdout/stderr on Windows (avoids cp1252 crash on box-drawing / arrow chars)
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # ── API endpoints ───────────────────────────────────────────────────────────
 GAMMA_API   = "https://gamma-api.polymarket.com"

@@ -1,161 +1,280 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta http-equiv="Cache-Control" content="no-store"/>
-  <title>Chainlink BTC · 1m candles (live)</title>
-  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; background: #0d1117; color: #e6edf3; font-family: system-ui, -apple-system, sans-serif; }
-    .bar {
-      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 12px; padding: 12px 16px; border-bottom: 1px solid #21262d; background: #010409;
-    }
-    .bar h1 { margin: 0; font-size: 1.05rem; font-weight: 600; }
-    .bar a { color: #58a6ff; text-decoration: none; font-size: 13px; }
-    .meta { display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; color: #8b949e; }
-    .meta b { color: #e6edf3; font-variant-numeric: tabular-nums; }
-    .price { font-size: 1.5rem; font-weight: 700; color: #f0b429; font-variant-numeric: tabular-nums; }
-    .up { color: #3fb950; }
-    .dn { color: #f85149; }
-    #chart-wrap { height: calc(100vh - 120px); min-height: 420px; width: 100%; position: relative; }
-    #chart { width: 100%; height: 100%; }
-    .forming {
-      position: absolute; top: 10px; left: 12px; z-index: 5;
-      background: rgba(1,4,9,0.85); border: 1px solid #30363d; border-radius: 8px;
-      padding: 10px 14px; font-size: 12px; font-family: ui-monospace, monospace;
-      pointer-events: none;
-    }
-    .forming span { color: #8b949e; }
-    .err { background: #490202; color: #ffa198; padding: 10px 16px; display: none; }
-    .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #21262d; color: #8b949e; }
-  </style>
-</head>
-<body>
-  <div class="bar">
-    <div>
-      <h1>BTC/USD · Chainlink · 1m <span class="pill">live forming</span></h1>
-      <div class="meta" style="margin-top:6px;">
-        <a href="/live">Live tape</a> · <a href="/livetest">Strategy test</a> · <a href="/">Backtest</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Chainlink BTC · 1m candles (live)</title>
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #0d1117;
+        color: #e6edf3;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #21262d;
+        background: #010409;
+      }
+      .bar h1 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+      .bar a {
+        color: #58a6ff;
+        text-decoration: none;
+        font-size: 13px;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        font-size: 13px;
+        color: #8b949e;
+      }
+      .meta b {
+        color: #e6edf3;
+        font-variant-numeric: tabular-nums;
+      }
+      .price {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f0b429;
+        font-variant-numeric: tabular-nums;
+      }
+      .up {
+        color: #3fb950;
+      }
+      .dn {
+        color: #f85149;
+      }
+      #chart-wrap {
+        height: calc(100vh - 120px);
+        min-height: 420px;
+        width: 100%;
+        position: relative;
+      }
+      #chart {
+        width: 100%;
+        height: 100%;
+      }
+      .forming {
+        position: absolute;
+        top: 10px;
+        left: 12px;
+        z-index: 5;
+        background: rgba(1, 4, 9, 0.85);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 12px;
+        font-family: ui-monospace, monospace;
+        pointer-events: none;
+      }
+      .forming span {
+        color: #8b949e;
+      }
+      .err {
+        background: #490202;
+        color: #ffa198;
+        padding: 10px 16px;
+        display: none;
+      }
+      .pill {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: #21262d;
+        color: #8b949e;
+      }
+    </style>
+  </head>
+  <body>
+    {% include "nav.html" %}
+    <div class="bar">
+      <div style="text-align: right">
+        <div class="price" id="last-price">—</div>
+        <div class="meta" id="status-line">Connecting…</div>
       </div>
     </div>
-    <div style="text-align:right;">
-      <div class="price" id="last-price">—</div>
-      <div class="meta" id="status-line">Connecting…</div>
+    <div id="err-box" class="err"></div>
+    <div id="chart-wrap">
+      <div class="forming" id="forming-box"></div>
+      <div id="chart"></div>
     </div>
-  </div>
-  <div id="err-box" class="err"></div>
-  <div id="chart-wrap">
-    <div class="forming" id="forming-box"></div>
-    <div id="chart"></div>
-  </div>
 
-<script>
-(function () {
-  const el = document.getElementById('chart');
-  const chart = LightweightCharts.createChart(el, {
-    layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
-    grid: { vertLines: { color: '#161b22' }, horzLines: { color: '#161b22' } },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor: '#30363d' },
-    timeScale: {
-      borderColor: '#30363d',
-      timeVisible: true,
-      secondsVisible: false,
-    },
-    localization: {
-      timeFormatter: function (t) {
-        var d = new Date(t * 1000);
-        return d.toISOString().slice(11, 16) + ' UTC';
-      },
-    },
-  });
-
-  const series = chart.addCandlestickSeries({
-    upColor: '#3fb950',
-    downColor: '#f85149',
-    borderUpColor: '#3fb950',
-    borderDownColor: '#f85149',
-    wickUpColor: '#3fb950',
-    wickDownColor: '#f85149',
-  });
-
-  let lastClosedCount = 0;
-  let lastFormingTime = null;
-
-  function fmtUsd(n) {
-    if (n == null || isNaN(n)) return '—';
-    return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-
-  function fmtOhlc(c) {
-    if (!c) return '—';
-    return 'O ' + c.open.toFixed(2) + '  H ' + c.high.toFixed(2) + '  L ' + c.low.toFixed(2) + '  C ' + c.close.toFixed(2);
-  }
-
-  function candleDir(c) {
-    if (!c) return '';
-    return c.close >= c.open ? 'up' : 'dn';
-  }
-
-  async function tick() {
-    try {
-      const r = await fetch('/api/chainlink_candles?minutes=480&csv_tail=60000');
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || r.statusText);
-
-      document.getElementById('err-box').style.display = 'none';
-      document.getElementById('last-price').textContent = fmtUsd(j.last_price);
-
-      var secLeft = j.seconds_until_close != null ? j.seconds_until_close : '—';
-      document.getElementById('status-line').innerHTML =
-        'Chainlink RTDS · tick <b>' + (j.last_tick_unix ? new Date(j.last_tick_unix * 1000).toISOString().slice(11, 19) + 'Z' : '—') + '</b>'
-        + ' · candle closes in <b>' + secLeft + 's</b>'
-        + ' · ' + (j.candles_all ? j.candles_all.length : 0) + ' bars';
-
-      var closed = j.candles_closed || [];
-      var forming = j.forming_candle;
-
-      if (closed.length !== lastClosedCount) {
-        series.setData(closed.map(function (c) {
-          return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
-        }));
-        lastClosedCount = closed.length;
-        lastFormingTime = null;
-      }
-
-      if (forming) {
-        series.update({
-          time: forming.time,
-          open: forming.open,
-          high: forming.high,
-          low: forming.low,
-          close: forming.close,
+    <script>
+      (function () {
+        const el = document.getElementById("chart");
+        const chart = LightweightCharts.createChart(el, {
+          layout: { background: { color: "#0d1117" }, textColor: "#8b949e" },
+          grid: {
+            vertLines: { color: "#161b22" },
+            horzLines: { color: "#161b22" },
+          },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+          rightPriceScale: { borderColor: "#30363d" },
+          timeScale: {
+            borderColor: "#30363d",
+            timeVisible: true,
+            secondsVisible: false,
+          },
+          localization: {
+            timeFormatter: function (t) {
+              var d = new Date(t * 1000);
+              return d.toISOString().slice(11, 16) + " UTC";
+            },
+          },
         });
-        lastFormingTime = forming.time;
-        var fb = document.getElementById('forming-box');
-        fb.innerHTML = '<span>FORMING 1m</span> <span class="' + candleDir(forming) + '">' + fmtOhlc(forming) + '</span>'
-          + '<br><span>closes in ' + secLeft + 's · ticks ' + (forming.ticks || 0) + '</span>';
-      } else {
-        document.getElementById('forming-box').innerHTML = '<span>Waiting for Chainlink ticks…</span>';
-      }
-    } catch (e) {
-      var box = document.getElementById('err-box');
-      box.style.display = 'block';
-      box.textContent = String(e.message || e);
-    }
-  }
 
-  window.addEventListener('resize', function () {
-    chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-  });
-  chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+        const series = chart.addCandlestickSeries({
+          upColor: "#3fb950",
+          downColor: "#f85149",
+          borderUpColor: "#3fb950",
+          borderDownColor: "#f85149",
+          wickUpColor: "#3fb950",
+          wickDownColor: "#f85149",
+        });
 
-  tick();
-  setInterval(tick, 1000);
-})();
-</script>
-</body>
+        let lastClosedCount = 0;
+        let lastFormingTime = null;
+
+        function fmtUsd(n) {
+          if (n == null || isNaN(n)) return "—";
+          return (
+            "$" +
+            Number(n).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          );
+        }
+
+        function fmtOhlc(c) {
+          if (!c) return "—";
+          return (
+            "O " +
+            c.open.toFixed(2) +
+            "  H " +
+            c.high.toFixed(2) +
+            "  L " +
+            c.low.toFixed(2) +
+            "  C " +
+            c.close.toFixed(2)
+          );
+        }
+
+        function candleDir(c) {
+          if (!c) return "";
+          return c.close >= c.open ? "up" : "dn";
+        }
+
+        async function tick() {
+          try {
+            const r = await fetch(
+              "/api/chainlink_candles?minutes=480&csv_tail=60000",
+            );
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error || r.statusText);
+
+            document.getElementById("err-box").style.display = "none";
+            document.getElementById("last-price").textContent = fmtUsd(
+              j.last_price,
+            );
+
+            var secLeft =
+              j.seconds_until_close != null ? j.seconds_until_close : "—";
+            document.getElementById("status-line").innerHTML =
+              "Chainlink RTDS · tick <b>" +
+              (j.last_tick_unix
+                ? new Date(j.last_tick_unix * 1000)
+                    .toISOString()
+                    .slice(11, 19) + "Z"
+                : "—") +
+              "</b>" +
+              " · candle closes in <b>" +
+              secLeft +
+              "s</b>" +
+              " · " +
+              (j.candles_all ? j.candles_all.length : 0) +
+              " bars";
+
+            var closed = j.candles_closed || [];
+            var forming = j.forming_candle;
+
+            if (closed.length !== lastClosedCount) {
+              series.setData(
+                closed.map(function (c) {
+                  return {
+                    time: c.time,
+                    open: c.open,
+                    high: c.high,
+                    low: c.low,
+                    close: c.close,
+                  };
+                }),
+              );
+              lastClosedCount = closed.length;
+              lastFormingTime = null;
+            }
+
+            if (forming) {
+              series.update({
+                time: forming.time,
+                open: forming.open,
+                high: forming.high,
+                low: forming.low,
+                close: forming.close,
+              });
+              lastFormingTime = forming.time;
+              var fb = document.getElementById("forming-box");
+              fb.innerHTML =
+                '<span>FORMING 1m</span> <span class="' +
+                candleDir(forming) +
+                '">' +
+                fmtOhlc(forming) +
+                "</span>" +
+                "<br><span>closes in " +
+                secLeft +
+                "s · ticks " +
+                (forming.ticks || 0) +
+                "</span>";
+            } else {
+              document.getElementById("forming-box").innerHTML =
+                "<span>Waiting for Chainlink ticks…</span>";
+            }
+          } catch (e) {
+            var box = document.getElementById("err-box");
+            box.style.display = "block";
+            box.textContent = String(e.message || e);
+          }
+        }
+
+        window.addEventListener("resize", function () {
+          chart.applyOptions({
+            width: el.clientWidth,
+            height: el.clientHeight,
+          });
+        });
+        chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+
+        tick();
+        setInterval(tick, 1000);
+      })();
+    </script>
+  </body>
 </html>
