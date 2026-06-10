@@ -51,6 +51,9 @@ def _load_markets():
     global _market_df
     with _market_lock:
         if _market_df is None:
+            if not MARKETS_CSV.exists():
+                _market_df = pd.DataFrame()
+                return _market_df
             df = pd.read_csv(MARKETS_CSV, low_memory=False)
             df = df[df["target_price"].notna()].copy()
             df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
