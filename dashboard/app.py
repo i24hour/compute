@@ -5,6 +5,7 @@ Then open: http://localhost:5050/  ·  Live: /live  ·  Live test: /livetest  ·
 """
 
 import json
+import os
 import sys
 import threading
 import time
@@ -389,4 +390,4 @@ if __name__ == "__main__":
     print("  CHAINLINK   http://localhost:5050/candles")
     print("  ALGO 5m     http://localhost:5050/algo")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5050, debug=False, threaded=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False, threaded=True)
