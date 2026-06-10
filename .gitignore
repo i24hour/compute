@@ -21,6 +21,7 @@ dashboard/app_runner.log
 
 # Large generated data (keep locally; regenerate via scripts)
 data/*.csv
+!data/btc_15m_candlesticks_merged.csv
 data/*.sqlite
 data/*.db
 data/per_ticker/
