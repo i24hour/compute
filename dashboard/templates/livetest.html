@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta http-equiv="Cache-Control" content="no-store"/>
   <title>Live test · PTB candle strategy · 5m</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #070b14; color: #e2e8f0; font-family: system-ui, sans-serif; padding: 16px 20px 32px 20px; }
@@ -64,6 +65,31 @@
     .prob-meta { font-size: 12px; color: #64748b; line-height: 1.5; }
     .sig-list { display: grid; gap: 6px; margin-top: 10px; max-height: 200px; overflow-y: auto; }
     .sig-row { font-size: 11px; padding: 6px 8px; border-radius: 8px; background: #090f1f; border: 1px solid #1e293b; }
+
+  /* ── Mobile (livetest.html) ── */
+  @media (max-width: 700px) {
+    body { padding: 10px 12px 24px; }
+    .split { grid-template-columns: 1fr !important; }
+    .prob-grid { grid-template-columns: 1fr !important; }
+    .win-grid { grid-template-columns: 1fr !important; }
+    .trade-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .grid-stats { grid-template-columns: repeat(2, 1fr) !important; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .controls button { width: 100%; }
+    table.t th, table.t td { padding: 5px 6px 5px 0; font-size: 11px; }
+  }
+
+  #csv-stale-warning {
+    display: none;
+    background: #450a0a;
+    border: 1px solid #7f1d1d;
+    color: #fca5a5;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  #csv-stale-warning strong { color: #fecaca; }
   </style>
 </head>
 <body>
@@ -82,7 +108,33 @@
 
   <div id="err-box"></div>
 
+  <div id="csv-stale-warning">
+    <strong>⚠ Recorder appears stopped</strong> — CSV has not been updated recently.
+    Run: <code style="background:#7f1d1d;padding:2px 8px;border-radius:4px;">
+    .venv/Scripts/python.exe -X utf8 poly_live_ticker.py --record-5m-csv data/poly_5m_live.csv --windows 6
+    </code>
+  </div>
+
   <div class="grid-stats" id="summary-row"></div>
+
+  <div class="card" id="pnl-chart-card" style="margin-bottom:16px;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;">Performance over time</h3>
+      <span id="pnl-chart-meta" style="font-size:11px;color:#64748b;"></span>
+    </div>
+    <div style="height:180px;position:relative;margin-bottom:12px;">
+      <canvas id="livetest-pnl-chart"></canvas>
+    </div>
+    <div style="border-top:1px solid #141c2f;padding-top:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:12px;color:#64748b;">Rolling 10-trade win rate</span>
+        <span id="rolling-current" style="font-size:12px;font-family:ui-monospace,monospace;color:#a78bfa;"></span>
+      </div>
+      <div style="height:100px;position:relative;">
+        <canvas id="livetest-rolling-chart"></canvas>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
     <h3>Candle pattern → 5m settlement probability</h3>
@@ -120,7 +172,13 @@
   </div>
 
   <div class="card">
-    <h3>Latest simulated trades (<span id="trade-count-meta">2500 cap</span>)</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;">Latest simulated trades (<span id="trade-count-meta">2500 cap</span>)</h3>
+      <button type="button" onclick="downloadLivetestCSV()"
+        style="padding:6px 14px;border-radius:8px;border:1px solid #16a34a;background:#0f2318;color:#4ade80;cursor:pointer;font-size:12px;font-weight:600;">
+        &#x2193; Download CSV
+      </button>
+    </div>
     <div class="trade-scroll">
       <table class="t"><thead id="tr-thead"><tr></tr></thead><tbody id="tr-body"></tbody></table>
     </div>
@@ -168,6 +226,18 @@
     if (js.csv_rows!=null) meta.push('rows-used: '+js.csv_rows.toLocaleString());
     if (js.csv_size_bytes!=null) meta.push('bytes: '+js.csv_size_bytes.toLocaleString());
     if (js.csv_mtime_unix!=null) meta.push('mtime: '+ new Date(js.csv_mtime_unix*1000).toLocaleString());
+
+    var staleDom = document.getElementById('csv-stale-warning');
+    if (staleDom) {
+      var nowSec = Math.floor(Date.now() / 1000);
+      var csvAge = js.csv_mtime_unix ? (nowSec - js.csv_mtime_unix) : null;
+      var isStale = csvAge == null || csvAge > 90;
+      staleDom.style.display = isStale ? 'block' : 'none';
+      if (isStale && csvAge != null) {
+        staleDom.querySelector('strong').textContent =
+          '⚠ Recorder appears stopped — CSV last updated ' + Math.round(csvAge) + 's ago';
+      }
+    }
     if (js.cache_hit) meta.push('cache hit');
     if (js.cache_age_seconds!=null) meta.push('cache age '+js.cache_age_seconds+'s');
     if (js.full_refresh_pending || js.refresh_pending) meta.push('full CSV refresh in background…');
@@ -177,6 +247,8 @@
     $('status-bar').textContent = paused ? '(paused)' : ('CSV clock ' + clock);
 
     $('summary-row').innerHTML = summarizeOverall(js.summary || {});
+    buildPnlChart(js.trades || []);
+    buildRollingWinRate(js.trades || []);
     candleProbRender(js.candle_probs || null);
     $('side-up').innerHTML = summarizeSide(js.summary_side && js.summary_side.UP);
     $('side-dn').innerHTML = summarizeSide(js.summary_side && js.summary_side.DOWN);
@@ -312,6 +384,7 @@
   }
 
   function tradesRender(trs){
+    _lastTrades = trs || [];
     const head = $('tr-thead').querySelector('tr');
     head.innerHTML = ['UTC time','Slug','Side','Ask live','Exe limit','odds¢','Outcome','PnL $'].map(c=>'<th>'+c+'</th>').join('');
     $('tr-body').innerHTML = (!trs||!trs.length) ? '<tr><td colspan="8"><span class="muted">Nothing yet · run recorder & come back.</span></td></tr>' :
@@ -333,6 +406,227 @@
       }).join('');
   }
 
+  var _pnlChart = null;
+  var _rollingChart = null;
+  var _lastTrades = [];
+
+  function buildPnlChart(trades) {
+    var settled = (trades || [])
+      .filter(function(t) { return t.settled && t.pnl_usd != null; })
+      .sort(function(a, b) { return a.ts_unix - b.ts_unix; });
+
+    if (settled.length < 2) {
+      document.getElementById('pnl-chart-card').style.display = 'none';
+      return;
+    }
+
+    var cumulative = 0;
+    var labels = [];
+    var values = [];
+    settled.forEach(function(t) {
+      cumulative += Number(t.pnl_usd);
+      var label = t.timestamp_utc_iso
+        ? t.timestamp_utc_iso.slice(11, 16) + 'Z'
+        : String(t.ts_unix);
+      labels.push(label);
+      values.push(parseFloat(cumulative.toFixed(4)));
+    });
+
+    var finalPnl = values[values.length - 1];
+    var isPositive = finalPnl >= 0;
+    var lineColor = isPositive ? '#34d399' : '#f87171';
+    var fillColor = isPositive ? 'rgba(52,211,153,0.08)' : 'rgba(248,113,113,0.08)';
+
+    document.getElementById('pnl-chart-meta').textContent =
+      settled.length + ' settled trades · final ' +
+      (isPositive ? '+' : '') + '$' + finalPnl.toFixed(2);
+
+    document.getElementById('pnl-chart-card').style.display = '';
+
+    if (_pnlChart) { _pnlChart.destroy(); _pnlChart = null; }
+
+    var ctx = document.getElementById('livetest-pnl-chart').getContext('2d');
+    _pnlChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          borderColor: lineColor,
+          backgroundColor: fillColor,
+          fill: true,
+          pointRadius: settled.length > 80 ? 0 : 2,
+          borderWidth: 2,
+          tension: 0.3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                var v = ctx.parsed.y;
+                return ' ' + (v >= 0 ? '+' : '') + '$' + v.toFixed(4);
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#141c2f' },
+            ticks: { color: '#475569', maxTicksLimit: 10, maxRotation: 0, font: { size: 10 } }
+          },
+          y: {
+            grid: { color: '#141c2f' },
+            ticks: {
+              color: '#475569',
+              font: { size: 10 },
+              callback: function(v) { return (v >= 0 ? '+' : '') + '$' + v.toFixed(2); }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function buildRollingWinRate(trades) {
+    var canvas = document.getElementById('livetest-rolling-chart');
+    if (!canvas) return;
+
+    var settled = (trades || [])
+      .filter(function(t) { return t.settled && t.pnl_usd != null; })
+      .sort(function(a, b) { return a.ts_unix - b.ts_unix; });
+
+    var rollingSection = canvas.parentElement.parentElement;
+    if (settled.length < 10) {
+      rollingSection.style.display = 'none';
+      return;
+    }
+    rollingSection.style.display = '';
+
+    var WINDOW = 10;
+    var labels = [];
+    var values = [];
+
+    for (var i = WINDOW - 1; i < settled.length; i++) {
+      var slice = settled.slice(i - WINDOW + 1, i + 1);
+      var wins  = slice.filter(function(t) { return t.pnl_usd > 0; }).length;
+      var label = settled[i].timestamp_utc_iso
+        ? settled[i].timestamp_utc_iso.slice(11, 16) + 'Z'
+        : String(settled[i].ts_unix);
+      labels.push(label);
+      values.push(parseFloat(((wins / WINDOW) * 100).toFixed(1)));
+    }
+
+    var latest = values[values.length - 1];
+    var rollingEl = document.getElementById('rolling-current');
+    if (rollingEl) {
+      rollingEl.textContent = 'Current: ' + latest.toFixed(1) + '%';
+      rollingEl.style.color = latest >= 55 ? '#34d399' : latest >= 45 ? '#fcd34d' : '#f87171';
+    }
+
+    if (_rollingChart) { _rollingChart.destroy(); _rollingChart = null; }
+
+    var ctx = canvas.getContext('2d');
+    _rollingChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            data: labels.map(function() { return 50; }),
+            borderColor: 'rgba(148,163,184,0.2)',
+            borderDash: [4, 4],
+            borderWidth: 1,
+            pointRadius: 0,
+            fill: false,
+          },
+          {
+            data: values,
+            borderColor: '#a78bfa',
+            backgroundColor: 'rgba(167,139,250,0.08)',
+            fill: true,
+            pointRadius: values.length > 60 ? 0 : 2,
+            borderWidth: 2,
+            tension: 0.4,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                return ctx.datasetIndex === 1 ? ' Win rate: ' + ctx.parsed.y.toFixed(1) + '%' : '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: '#141c2f' },
+            ticks: { color: '#475569', maxTicksLimit: 8, maxRotation: 0, font: { size: 9 } }
+          },
+          y: {
+            min: 0, max: 100,
+            grid: { color: '#141c2f' },
+            ticks: { color: '#475569', font: { size: 9 }, callback: function(v) { return v + '%'; }, stepSize: 25 }
+          }
+        }
+      }
+    });
+  }
+
+  function downloadLivetestCSV() {
+    if (!_lastTrades.length) { alert('No trades to export yet.'); return; }
+
+    var headers = [
+      'timestamp_utc', 'slug', 'side', 'ask_live_pct', 'limit_price_pct',
+      'odds_cents', 'ptb_usd', 'result', 'pnl_usd', 'settled', 'window_end_unix'
+    ];
+
+    var rows = _lastTrades.map(function(t) {
+      return [
+        t.timestamp_utc_iso || '',
+        t.slug               || '',
+        t.side               || '',
+        t.ask_live  != null  ? (t.ask_live  * 100).toFixed(1) : '',
+        t.limit_px  != null  ? (t.limit_px  * 100).toFixed(1) : '',
+        t.odds_cents != null ? t.odds_cents : '',
+        t.ptb_usd   != null  ? t.ptb_usd.toFixed(2) : '',
+        t.result             || '',
+        t.pnl_usd   != null  ? t.pnl_usd.toFixed(4) : '',
+        t.settled ? 'true' : 'false',
+        t.window_end_unix || '',
+      ].map(function(cell) {
+        var s = String(cell);
+        if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0) {
+          s = '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }).join(',');
+    });
+
+    var csv = [headers.join(',')].concat(rows).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'livetest_trades_' + new Date().toISOString().slice(0,10) + '.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   function schedule(){ if(timer)clearInterval(timer); timer=setInterval(function(){ if(!paused)refresh(); }, 4700);}
   $('btn-load').onclick = refresh;
   $('btn-pause').onclick = function(){
@@ -344,7 +638,5 @@
   refresh(); schedule();
 })();
 </script>
-</body>
-</html>
 </body>
 </html>

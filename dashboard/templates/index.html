@@ -515,6 +515,24 @@
         </div>
       </div>
 
+      <!-- ── Hourly Heatmap ─────────────────────────────────── -->
+      <div class="card p-4 mb-5" id="hourly-heatmap-card">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-slate-300">Win Rate by UTC Hour
+            <span class="text-slate-500 font-normal ml-2 text-xs">based on trade entry time</span>
+          </h2>
+          <span class="text-xs text-slate-500">green = high win rate · red = low win rate · grey = no trades</span>
+        </div>
+        <div id="hourly-heatmap-grid" style="display:grid;grid-template-columns:repeat(24, 1fr);gap:3px;"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:#475569;">
+          <span>00:00 UTC</span>
+          <span>06:00 UTC</span>
+          <span>12:00 UTC</span>
+          <span>18:00 UTC</span>
+          <span>23:00 UTC</span>
+        </div>
+      </div>
+
       <!-- ── Trade log ────────────────────────────────────────────────── -->
       <div class="card p-4">
         <div class="flex items-center justify-between mb-3">
@@ -525,7 +543,7 @@
               class="text-slate-500 font-normal ml-1"
             ></span>
           </h2>
-          <div class="flex gap-2 text-xs">
+          <div class="flex gap-2 text-xs items-center">
             <button
               onclick="filterTrades('all')"
               id="f-all"
@@ -574,6 +592,11 @@
               class="px-2 py-1 rounded bg-slate-700 text-slate-300"
             >
               L2
+            </button>
+            <button onclick="downloadBacktestCSV()"
+              class="px-2 py-1 rounded bg-slate-700 text-emerald-400 border border-emerald-800 hover:bg-slate-600"
+              title="Download visible trades as CSV">
+              &#x2193; CSV
             </button>
           </div>
         </div>
@@ -676,6 +699,55 @@
         if (Number.isNaN(x)) return String(s);
         return (x * 100).toFixed(1) + "%";
       }
+      function buildProbBarsHTML(upBid, upAsk, dnBid, dnAsk) {
+        function barW(prob) {
+          var v = parseFloat(prob);
+          if (isNaN(v)) return "0%";
+          return Math.min(100, Math.max(0, v * 100)).toFixed(1) + "%";
+        }
+        function fmtP(v) {
+          var x = parseFloat(v);
+          if (isNaN(x)) return "—";
+          return (x * 100).toFixed(1) + "%";
+        }
+        var upBidF = parseFloat(upBid) || 0;
+        var upAskF = parseFloat(upAsk) || 0;
+        var spread =
+          upAskF > upBidF ? ((upAskF - upBidF) * 100).toFixed(1) + "¢" : "—";
+        return (
+          [
+            ["UP bid", upBid, "#4ade80", "#16a34a"],
+            ["UP ask", upAsk, "#86efac", "#16a34a"],
+            ["DOWN bid", dnBid, "#c084fc", "#7c3aed"],
+            ["DOWN ask", dnAsk, "#d8b4fe", "#7c3aed"],
+          ]
+            .map(function (row) {
+              return (
+                '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;font-size:11px;">' +
+                '<span style="width:64px;color:#64748b;flex-shrink:0;">' +
+                row[0] +
+                "</span>" +
+                '<div style="flex:1;height:8px;background:#1e293b;border-radius:999px;overflow:hidden;">' +
+                '<div style="width:' +
+                barW(row[1]) +
+                ";height:100%;background:" +
+                row[3] +
+                ';border-radius:999px;transition:width 0.4s;"></div>' +
+                "</div>" +
+                '<span style="width:40px;text-align:right;color:' +
+                row[2] +
+                ';font-family:ui-monospace,monospace;font-weight:700;">' +
+                fmtP(row[1]) +
+                "</span>" +
+                "</div>"
+              );
+            })
+            .join("") +
+          '<div style="font-size:10px;color:#475569;margin-top:4px;">spread ' +
+          spread +
+          "</div>"
+        );
+      }
       function renderLivePanel(data) {
         lastLiveData = data;
         const st = document.getElementById("live-status");
@@ -767,12 +839,7 @@
           <span>PTB <span class="text-fuchsia-300 font-mono">${ptb}</span>${ptbSrc}</span>
           ${mid ? "<span>" + mid + "</span>" : ""}
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          <div><span class="text-slate-500">UP bid</span> <span class="text-emerald-400 font-mono">${fmtLiveProb(up.bid)}</span></div>
-          <div><span class="text-slate-500">UP ask</span> <span class="text-red-300 font-mono">${fmtLiveProb(up.ask)}</span></div>
-          <div><span class="text-slate-500">DOWN bid</span> <span class="text-emerald-400 font-mono">${fmtLiveProb(dn.bid)}</span></div>
-          <div><span class="text-slate-500">DOWN ask</span> <span class="text-red-300 font-mono">${fmtLiveProb(dn.ask)}</span></div>
-        </div>
+        <div style="margin-top:8px;">${buildProbBarsHTML(up.bid, up.ask, dn.bid, dn.ask)}</div>
         ${bookHtml}
       </div>`;
           })
@@ -898,6 +965,9 @@
 
         // Trade table
         filterTrades(currentFilter);
+
+        // Hourly heatmap
+        buildHourlyHeatmap(trades);
       }
 
       // ── Charts ─────────────────────────────────────────────────────────────────
@@ -1061,6 +1131,111 @@
           sortAsc = false;
         }
         filterTrades(currentFilter);
+      }
+
+      // ── Hourly heatmap ─────────────────────────────────────────────────────────
+      function buildHourlyHeatmap(trades) {
+        var grid = document.getElementById('hourly-heatmap-grid');
+        if (!grid) return;
+
+        var buckets = {};
+        for (var h = 0; h < 24; h++) {
+          buckets[h] = { wins: 0, losses: 0, pnl: 0 };
+        }
+
+        trades.forEach(function(t) {
+          if (!t.timestamp) return;
+          var hour = new Date(t.timestamp).getUTCHours();
+          if (hour < 0 || hour > 23) return;
+          if (t.outcome === 'WIN')  buckets[hour].wins++;
+          if (t.outcome === 'LOSS') buckets[hour].losses++;
+          buckets[hour].pnl += (t.pnl || 0);
+        });
+
+        grid.innerHTML = '';
+        for (var h = 0; h < 24; h++) {
+          var b = buckets[h];
+          var total = b.wins + b.losses;
+          var winRate = total > 0 ? b.wins / total : null;
+          var pnl = b.pnl;
+
+          var bg = '#1a1d27', textColor = '#475569';
+          if (winRate !== null) {
+            if (winRate >= 0.70)      { bg = '#064e3b'; textColor = '#34d399'; }
+            else if (winRate >= 0.60) { bg = '#065f46'; textColor = '#6ee7b7'; }
+            else if (winRate >= 0.50) { bg = '#166534'; textColor = '#86efac'; }
+            else if (winRate >= 0.40) { bg = '#422006'; textColor = '#fcd34d'; }
+            else if (winRate >= 0.30) { bg = '#7c2d12'; textColor = '#fb923c'; }
+            else                      { bg = '#450a0a'; textColor = '#f87171'; }
+          }
+
+          var label = String(h).padStart(2, '0');
+          var winPct = winRate !== null ? (winRate * 100).toFixed(0) + '%' : '—';
+
+          var cell = document.createElement('div');
+          cell.style.cssText = 'background:' + bg + ';border-radius:4px;padding:6px 2px;text-align:center;cursor:default;border:1px solid #2d3148;';
+          cell.innerHTML =
+            '<div style="font-size:9px;color:#64748b;font-weight:600;">' + label + 'h</div>' +
+            '<div style="font-size:11px;font-weight:700;color:' + textColor + ';margin:2px 0;">' + winPct + '</div>' +
+            '<div style="font-size:9px;color:#475569;">' + (total > 0 ? total + 'T' : '') + '</div>';
+          cell.title = 'Hour ' + label + ':00 UTC\nTrades: ' + total + '\nWins: ' + b.wins + '  Losses: ' + b.losses + '\nWin rate: ' + winPct + '\nP&L: ' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2);
+          grid.appendChild(cell);
+        }
+      }
+
+      // ── CSV export ─────────────────────────────────────────────────────────────
+      function downloadBacktestCSV() {
+        var filtered = allTrades.filter(function(t) {
+          if (currentFilter === 'all')  return true;
+          if (currentFilter === 'WIN')  return t.outcome === 'WIN';
+          if (currentFilter === 'LOSS') return t.outcome === 'LOSS';
+          if (currentFilter === 'UP')   return t.direction === 'UP';
+          if (currentFilter === 'DOWN') return t.direction === 'DOWN';
+          if (currentFilter === 'L1')   return t.trigger && t.trigger.startsWith('L1');
+          if (currentFilter === 'L2')   return t.trigger && t.trigger.startsWith('L2');
+          return true;
+        });
+
+        if (!filtered.length) { alert('No trades to export.'); return; }
+
+        var headers = [
+          'timestamp_utc', 'market_ticker', 'target_price_usd', 'btc_price_usd',
+          'deviation_pct', 'trigger', 'direction', 'limit_price_cents',
+          'entry_price_cents', 'pnl_usd', 'outcome'
+        ];
+
+        var rows = filtered.map(function(t) {
+          return [
+            t.timestamp,
+            t.ticker,
+            t.target_price != null ? t.target_price.toFixed(2) : '',
+            t.btc_price    != null ? t.btc_price.toFixed(2)    : '',
+            t.deviation    != null ? t.deviation.toFixed(4)    : '',
+            t.trigger      || '',
+            t.direction    || '',
+            t.limit_price  != null ? (t.limit_price * 100).toFixed(0) : '',
+            t.entry_price  != null ? (t.entry_price * 100).toFixed(1) : '',
+            t.pnl          != null ? t.pnl.toFixed(4) : '',
+            t.outcome      || '',
+          ].map(function(cell) {
+            var s = String(cell);
+            if (s.indexOf(',') >= 0 || s.indexOf('"') >= 0 || s.indexOf('\n') >= 0) {
+              s = '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+          }).join(',');
+        });
+
+        var csv = [headers.join(',')].concat(rows).join('\r\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var url  = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'backtest_trades_' + new Date().toISOString().slice(0,10) + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       }
 
       // ── Helpers ────────────────────────────────────────────────────────────────

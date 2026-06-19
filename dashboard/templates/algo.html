@@ -139,6 +139,17 @@
         font-size: 11px;
         max-height: 200px;
       }
+
+      /* ── Mobile (algo.html) ── */
+      @media (max-width: 600px) {
+        body { padding: 10px; }
+        .grid { grid-template-columns: repeat(2, 1fr); }
+        .card div[style*="overflow-x"] { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table th, table td { font-size: 11px; padding: 5px 6px 5px 0; white-space: nowrap; }
+        pre { white-space: pre-wrap; word-break: break-all; }
+        .hero { padding: 14px; }
+        .hero h1 { font-size: 1.1rem; }
+      }
     </style>
   </head>
   <body>
